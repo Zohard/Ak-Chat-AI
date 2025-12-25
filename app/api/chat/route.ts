@@ -150,7 +150,9 @@ export async function POST(req: Request) {
     }
 
     // Initialize Gemini model
-    const model = google('gemini-1.5-flash-latest');
+    // Use current generation (Gemini 1.5 was shut down in Sept 2025)
+    // Available models: gemini-2.5-flash, gemini-2.5-pro, gemini-3-flash, gemini-3-pro
+    const model = google('gemini-2.5-flash');
 
     // Get tools with auth token for API calls
     const tools = getTools(authToken);
