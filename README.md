@@ -4,7 +4,7 @@ AI-powered chatbot for managing the Anime-Kun database using Gemini 1.5 Flash.
 
 ## Features
 
-- 🤖 **AI Assistant**: Powered by Google Gemini 1.5 Flash
+- 🤖 **AI Assistant**: Powered by Google Gemini 1.5 Flash (gemini-1.5-flash-latest)
 - 🔍 **Smart Search**: Find animes in your database with natural language
 - ➕ **Auto-Create**: Fetch data from AniList and create animes with AI assistance
 - ✅ **Moderation**: Approve or reject pending anime entries

@@ -144,8 +144,8 @@ export async function POST(req: Request) {
       });
     }
 
-    // Initialize Gemini model
-    const model = google('models/gemini-1.5-flash-latest', {
+    // Initialize Gemini model (use model name without 'models/' prefix)
+    const model = google('gemini-1.5-flash-latest', {
       safetySettings: [
         { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
         { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
