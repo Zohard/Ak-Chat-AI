@@ -91,17 +91,16 @@ export async function POST(req: Request) {
 
     console.log('[Chat] Processing request with', messages.length, 'messages');
 
-    // OPTION 1: Essayez d'abord toTextStreamResponse
-    // C'est la méthode la plus simple et stable
+    // Stream the AI response with tool support
     const result = streamText({
       model,
       system: SYSTEM_PROMPT,
       messages,
       tools,
-      maxSteps: 10,
+      temperature: 0.7,
     });
 
-    return result.toTextStreamResponse({
+    return result.toUIMessageStreamResponse({
       headers: {
         ...corsHeaders,
         ...rateLimitHeaders,
