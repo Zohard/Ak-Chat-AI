@@ -11,20 +11,34 @@ const google = createGoogleGenerativeAI({
 
 export const maxDuration = 30;
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': process.env.NODE_ENV === 'development'
-      ? 'http://localhost:3000'
-      : process.env.FRONTEND_URL || '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-User-Id, X-Requested-With, Accept, Origin',
-  'Access-Control-Allow-Credentials': 'true',
-  'Access-Control-Max-Age': '86400',
-};
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3003',
+  process.env.FRONTEND_URL,
+  process.env.NEXT_PUBLIC_FRONTEND_URL,
+  'https://ak-front-production.up.railway.app',
+].filter(Boolean);
+
+// Get CORS headers based on request origin
+function getCorsHeaders(request: Request): Record<string, string> {
+  const origin = request.headers.get('origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin || 'http://localhost:3000',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-User-Id, X-Requested-With, Accept, Origin',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Max-Age': '86400',
+  };
+}
 
 export async function OPTIONS(request: Request) {
   return new Response(null, {
     status: 200,
-    headers: corsHeaders,
+    headers: getCorsHeaders(request),
   });
 }
 
@@ -34,7 +48,7 @@ export async function POST(req: Request) {
     const authToken = req.headers.get('authorization')?.replace('Bearer ', '');
 
     if (!authToken) {
-      return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+      return new Response('Unauthorized', { status: 401, headers: getCorsHeaders(req) });
     }
 
     const userId = req.headers.get('x-user-id') || 'anonymous';
@@ -56,7 +70,7 @@ export async function POST(req: Request) {
             status: 429,
             headers: {
               'Content-Type': 'application/json',
-              ...corsHeaders,
+              ...getCorsHeaders(req),
               ...rateLimitHeaders,
             },
           }
@@ -64,7 +78,7 @@ export async function POST(req: Request) {
     }
 
     if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      return new Response('Missing API key', { status: 500, headers: corsHeaders });
+      return new Response('Missing API key', { status: 500, headers: getCorsHeaders(req) });
     }
 
     const model = google('gemini-2.5-flash');
@@ -119,7 +133,7 @@ export async function POST(req: Request) {
 
     return result.toUIMessageStreamResponse({
       headers: {
-        ...corsHeaders,
+        ...getCorsHeaders(req),
         ...rateLimitHeaders,
       },
     });
@@ -218,7 +232,7 @@ export async function POST(req: Request) {
           status: statusCode,
           headers: {
             'Content-Type': 'application/json',
-            ...corsHeaders,
+            ...getCorsHeaders(req),
           },
         }
     );

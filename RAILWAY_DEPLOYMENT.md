@@ -329,4 +329,53 @@ railway service
 
 ---
 
-Last updated: 2025-12-24
+## ⚠️ CRITICAL FIXES APPLIED (2025-12-25)
+
+### 1. ✅ CORS Duplicate Headers Fixed
+**Problem**: Multiple `Access-Control-Allow-Origin` values causing CORS errors
+**Solution**:
+- Updated `middleware.ts` to include production frontend URL
+- Updated `app/api/chat/route.ts` to use dynamic CORS based on request origin
+- Added `https://ak-front-production.up.railway.app` to allowed origins
+
+### 2. ✅ Port Configuration Fixed
+**Problem**: Hardcoded `-p 3001` prevented Railway from using dynamic PORT
+**Solution**:
+- Removed `-p 3001` from `start` script in `package.json`
+- Next.js now uses Railway's `PORT` environment variable automatically
+
+### 3. ✅ French Language Support Fixed
+**Problem**: Gemini wasn't generating French responses
+**Solution**: Simplified system prompt to avoid confusion
+
+### 4. ⚠️ Backend API Route Fix Needed
+**Problem**: `/api/seasons/last-created` returns 400 error
+**File**: `anime-kun-nestjs-v2/src/modules/seasons/seasons.controller.ts`
+**Fix**: Move specific routes (`current`, `last-created`) BEFORE the generic `:id` route
+
+## Updated Environment Variables for Railway
+
+Set these in Railway dashboard for **ai-orchestrator**:
+
+```bash
+# CRITICAL - Must match your frontend URL exactly
+FRONTEND_URL=https://ak-front-production.up.railway.app
+
+# Google AI API
+GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_key
+
+# Backend API
+NESTJS_API_BASE=https://ak-api-production.up.railway.app
+
+# Environment
+NODE_ENV=production
+
+# Optional: Rate limiting
+# KV_REST_API_URL=your_upstash_url
+# KV_REST_API_TOKEN=your_upstash_token
+# RATE_LIMIT_MAX=500
+```
+
+---
+
+Last updated: 2025-12-25

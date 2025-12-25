@@ -7,10 +7,13 @@ export function middleware(request: NextRequest) {
 
   // Define allowed origins
   const allowedOrigins = [
-    process.env.NUXT_ORIGIN || 'http://localhost:3000',
+    process.env.FRONTEND_URL,
+    process.env.NUXT_ORIGIN,
     'http://localhost:3000',
     'http://localhost:3001',
-  ];
+    'http://localhost:3003',
+    'https://ak-front-production.up.railway.app',
+  ].filter(Boolean);
 
   // Check if origin is allowed
   const isAllowedOrigin = origin && allowedOrigins.includes(origin);
