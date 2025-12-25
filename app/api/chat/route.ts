@@ -1,7 +1,12 @@
 import { streamText } from 'ai';
-import { google } from '@ai-sdk/google';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { getTools } from '@/lib/tools';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/ratelimit';
+
+// Initialize Google Generative AI with API key
+const google = createGoogleGenerativeAI({
+  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || '',
+});
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -144,15 +149,8 @@ export async function POST(req: Request) {
       });
     }
 
-    // Initialize Gemini model (use model name without 'models/' prefix)
-    const model = google('gemini-1.5-flash-latest', {
-      safetySettings: [
-        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-      ],
-    });
+    // Initialize Gemini model
+    const model = google('gemini-1.5-flash-latest');
 
     // Get tools with auth token for API calls
     const tools = getTools(authToken);
