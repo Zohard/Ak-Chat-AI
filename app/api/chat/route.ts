@@ -1,5 +1,5 @@
 // app/api/chat/route.ts
-import { streamText } from 'ai';
+import { streamText, stepCountIs } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { getTools } from '@/lib/tools';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/ratelimit';
@@ -71,26 +71,47 @@ export async function POST(req: Request) {
     const tools = getTools(authToken);
 
     console.log('[Chat] Processing request with', messages.length, 'messages');
+    console.log('[Chat] Last user message:', messages[messages.length - 1]?.content?.substring(0, 100));
 
     // Stream the AI response with tool support
+    // CRITICAL: stopWhen controls how many steps are allowed
+    // Default is stepCountIs(1) which stops after tool call - we need more!
     const result = streamText({
       model,
       system: SYSTEM_PROMPT,
       messages,
       tools,
       temperature: 0.7,
-      onFinish: async ({ text, toolResults }) => {
+      stopWhen: stepCountIs(5), // Allow up to 5 steps: tool calls + text generation
+      onStepFinish: async ({ text, toolCalls, toolResults }) => {
+        console.log('[AI Chat] Step finished:', {
+          hasText: !!text,
+          textLength: text?.length || 0,
+          toolCallsCount: toolCalls?.length || 0,
+          toolResultsCount: toolResults?.length || 0,
+        });
+      },
+      onFinish: async ({ text, toolResults, finishReason, steps }) => {
+        console.log('[AI Chat] Request finished:', {
+          finishReason,
+          stepsCount: steps?.length || 0,
+          finalTextLength: text?.length || 0,
+          toolResultsCount: toolResults?.length || 0,
+        });
+
         // Safety check: Warn if Gemini returned empty or JSON-like text after using tools
         if (toolResults && toolResults.length > 0) {
           const hasContent = text && text.trim().length > 0;
           const looksLikeJson = text && /^\s*\{[\s\S]*"success"/.test(text);
 
           if (!hasContent) {
-            console.warn('[AI Chat] Warning: Gemini used tools but returned empty text response');
+            console.error('[AI Chat] ⚠️ Gemini used', toolResults.length, 'tools but returned NO text response');
+            console.error('[AI Chat] FinishReason:', finishReason);
+            console.error('[AI Chat] Steps:', JSON.stringify(steps, null, 2));
           } else if (looksLikeJson) {
-            console.warn('[AI Chat] Warning: Gemini returned raw JSON despite instructions:', text.substring(0, 100));
+            console.warn('[AI Chat] ⚠️ Gemini returned raw JSON despite instructions:', text.substring(0, 100));
           } else {
-            console.log('[AI Chat] ✓ Gemini provided formatted response after tool use');
+            console.log('[AI Chat] ✓ Gemini provided formatted response after', toolResults.length, 'tool call(s)');
           }
         }
       },
