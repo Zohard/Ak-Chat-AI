@@ -13,8 +13,8 @@ export default function Home() {
       <div style={{ marginTop: '1rem', padding: '1rem', background: '#e3f2fd', borderRadius: '8px' }}>
         <h3>Status</h3>
         <p>✅ Server is running</p>
-        <p>🤖 Gemini 1.5 Flash ready</p>
-        <p>🔧 6 AI tools available</p>
+        <p>🤖 Gemini 2.5 Flash ready</p>
+        <p>🔧 14 AI tools available</p>
       </div>
     </main>
   )

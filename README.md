@@ -133,10 +133,19 @@ Set cover image for anime ID 123 from https://example.com/poster.jpg
 Add screenshot for anime ID 456 from https://example.com/scene.jpg
 ```
 
+**Manage seasons:**
+```
+Show me all seasons
+What's the current season?
+Create season Été 2025
+Add Attack on Titan to Hiver 2024
+```
+
 ## API Tools
 
 The AI has access to these tools:
 
+### Anime Management
 | Tool | Description | Endpoint |
 |------|-------------|----------|
 | `listAnimes` | Search/filter animes | `GET /api/admin/animes` |
@@ -145,6 +154,18 @@ The AI has access to these tools:
 | `searchAniList` | Fetch from AniList | `GET /api/animes/anilist/search` |
 | `uploadCoverImage` | Upload cover image from URL | `POST /api/media/upload-from-url` + `PUT /api/admin/animes/:id` |
 | `uploadScreenshot` | Upload screenshot from URL | `POST /api/media/upload-from-url` |
+
+### Season Management
+| Tool | Description | Endpoint |
+|------|-------------|----------|
+| `listSeasons` | List all seasons | `GET /api/seasons` |
+| `getCurrentSeason` | Get current active season (last created with statut=1) | `GET /api/seasons/current` |
+| `getLastCreatedSeason` | Get last created season (regardless of status) | `GET /api/seasons/last-created` |
+| `createSeason` | Create new season | `POST /api/admin/seasons` |
+| `updateSeasonStatus` | Show/hide season | `PATCH /api/admin/seasons/:id` |
+| `addAnimeToSeason` | Add anime to season | `POST /api/admin/seasons/:id/animes` |
+| `removeAnimeFromSeason` | Remove anime from season | `DELETE /api/admin/seasons/:id/animes/:animeId` |
+| `deleteSeason` | Delete season | `DELETE /api/admin/seasons/:id` |
 
 ## Rate Limiting
 

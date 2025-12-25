@@ -76,6 +76,69 @@ export const UploadScreenshotSchema = z.object({
 });
 
 /**
+ * Schema for listing all seasons
+ * Maps to GET /api/seasons
+ */
+export const ListSeasonsSchema = z.object({});
+
+/**
+ * Schema for getting current season
+ * Maps to GET /api/seasons/current
+ */
+export const GetCurrentSeasonSchema = z.object({});
+
+/**
+ * Schema for getting last created season
+ * Maps to GET /api/seasons/last-created
+ */
+export const GetLastCreatedSeasonSchema = z.object({});
+
+/**
+ * Schema for creating a new season
+ * Maps to POST /api/admin/seasons
+ */
+export const CreateSeasonSchema = z.object({
+  annee: z.number().int().min(2000).max(2100).describe('Year for the season'),
+  saison: z.number().int().min(1).max(4).describe('Season number: 1=hiver, 2=printemps, 3=été, 4=automne'),
+  statut: z.number().int().min(0).max(1).default(1).describe('Status: 0=hidden, 1=visible'),
+});
+
+/**
+ * Schema for updating season status
+ * Maps to PATCH /api/admin/seasons/:id
+ */
+export const UpdateSeasonStatusSchema = z.object({
+  id: z.number().int().min(1).describe('Season ID to update'),
+  statut: z.number().int().min(0).max(1).describe('New status: 0=hidden, 1=visible'),
+});
+
+/**
+ * Schema for adding anime to season
+ * Maps to POST /api/admin/seasons/:id/animes
+ */
+export const AddAnimeToSeasonSchema = z.object({
+  seasonId: z.number().int().min(1).describe('Season ID to add anime to'),
+  animeId: z.number().int().min(1).describe('Anime ID to add to the season'),
+});
+
+/**
+ * Schema for removing anime from season
+ * Maps to DELETE /api/admin/seasons/:id/animes/:animeId
+ */
+export const RemoveAnimeFromSeasonSchema = z.object({
+  seasonId: z.number().int().min(1).describe('Season ID to remove anime from'),
+  animeId: z.number().int().min(1).describe('Anime ID to remove from the season'),
+});
+
+/**
+ * Schema for deleting a season
+ * Maps to DELETE /api/admin/seasons/:id
+ */
+export const DeleteSeasonSchema = z.object({
+  id: z.number().int().min(1).describe('Season ID to delete'),
+});
+
+/**
  * Type exports for TypeScript
  */
 export type AnimeListParams = z.infer<typeof AnimeListSchema>;
@@ -84,3 +147,11 @@ export type UpdateAnimeStatusParams = z.infer<typeof UpdateAnimeStatusSchema>;
 export type SearchAniListParams = z.infer<typeof SearchAniListSchema>;
 export type UploadCoverImageParams = z.infer<typeof UploadCoverImageSchema>;
 export type UploadScreenshotParams = z.infer<typeof UploadScreenshotSchema>;
+export type ListSeasonsParams = z.infer<typeof ListSeasonsSchema>;
+export type GetCurrentSeasonParams = z.infer<typeof GetCurrentSeasonSchema>;
+export type GetLastCreatedSeasonParams = z.infer<typeof GetLastCreatedSeasonSchema>;
+export type CreateSeasonParams = z.infer<typeof CreateSeasonSchema>;
+export type UpdateSeasonStatusParams = z.infer<typeof UpdateSeasonStatusSchema>;
+export type AddAnimeToSeasonParams = z.infer<typeof AddAnimeToSeasonSchema>;
+export type RemoveAnimeFromSeasonParams = z.infer<typeof RemoveAnimeFromSeasonSchema>;
+export type DeleteSeasonParams = z.infer<typeof DeleteSeasonSchema>;

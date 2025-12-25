@@ -1,4 +1,4 @@
-import { tool } from 'ai';
+import { tool } from 'ai'; // ← AJOUTEZ CETTE LIGNE SI MANQUANTE
 import {
   AnimeListSchema,
   CreateAnimeSchema,
@@ -6,6 +6,14 @@ import {
   SearchAniListSchema,
   UploadCoverImageSchema,
   UploadScreenshotSchema,
+  ListSeasonsSchema,
+  GetCurrentSeasonSchema,
+  GetLastCreatedSeasonSchema,
+  CreateSeasonSchema,
+  UpdateSeasonStatusSchema,
+  AddAnimeToSeasonSchema,
+  RemoveAnimeFromSeasonSchema,
+  DeleteSeasonSchema,
 } from './schemas';
 
 const API_BASE = process.env.NESTJS_API_BASE || 'http://localhost:3002';
@@ -14,10 +22,10 @@ const API_BASE = process.env.NESTJS_API_BASE || 'http://localhost:3002';
  * Helper function to make authenticated API calls to NestJS backend
  */
 async function callNestAPI(
-  endpoint: string,
-  method: string = 'GET',
-  authToken?: string,
-  body?: any
+    endpoint: string,
+    method: string = 'GET',
+    authToken?: string,
+    body?: any
 ) {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -37,8 +45,8 @@ async function callNestAPI(
   }
 
   const url = method === 'GET' && body
-    ? `${API_BASE}${endpoint}?${new URLSearchParams(body).toString()}`
-    : `${API_BASE}${endpoint}`;
+      ? `${API_BASE}${endpoint}?${new URLSearchParams(body).toString()}`
+      : `${API_BASE}${endpoint}`;
 
   const response = await fetch(url, options);
 
@@ -55,7 +63,19 @@ async function callNestAPI(
  * Retrieves animes from the database with optional filters
  */
 export const listAnimesTool = (authToken?: string) => tool({
-  description: `Search and list animes from the database. Use this to:
+  description: `Search and list animes from the database.
+
+⚠️ CRITICAL FORMATTING: When you receive results, format them as:
+"J'ai trouvé X anime(s) :
+
+1. **[Titre français]** ([Année])
+   📺 Type : [Format] • [X] épisodes
+   📊 Statut : [🟡 En attente / ✅ Publié / ❌ Refusé]
+   🆔 ID : [idAnime]"
+
+NEVER show raw JSON like {"success": true, "data": {...}}
+
+Use this to:
 - Find a specific anime by title (use search parameter)
 - List pending animes for moderation (statut=0)
 - List published animes (statut=1)
@@ -91,6 +111,12 @@ IMPORTANT: Before calling this tool, you MUST:
 1. Use searchAniList to fetch accurate data from AniList
 2. Present the data to the admin for confirmation
 3. Only create after admin confirms
+
+After creation, respond with:
+"✅ Anime créé avec succès !
+   • ID : [idAnime]
+   • Titre : [titre]
+   • Statut : 🟡 En attente de modération"
 
 Required fields: titre, niceUrl, annee, nbEp, synopsis`,
   parameters: CreateAnimeSchema,
@@ -131,10 +157,10 @@ You must first use listAnimes to get the anime ID.`,
   execute: async (params) => {
     try {
       const result = await callNestAPI(
-        `/api/admin/animes/${params.id}/status`,
-        'PUT',
-        authToken,
-        { statut: params.statut }
+          `/api/admin/animes/${params.id}/status`,
+          'PUT',
+          authToken,
+          { statut: params.statut }
       );
 
       const statusText = params.statut === 1 ? 'approved' : params.statut === 2 ? 'refused' : 'set to pending';
@@ -159,20 +185,28 @@ You must first use listAnimes to get the anime ID.`,
 export const searchAniListTool = (authToken?: string) => tool({
   description: `Search the AniList database for anime information.
 
+⚠️ CRITICAL: Format results as:
+"J'ai trouvé sur AniList :
+
+**[Titre]** ([Titre original])
+📅 Année : [annee]
+📺 Épisodes : [nbEpisodes]
+🎬 Studio : [studio]
+
+Voulez-vous que je l'ajoute à la base de données ?"
+
 Use this when:
 - Admin wants to add a new anime from external source
 - Need accurate metadata (episodes, year, studio, etc.)
-- Want to verify anime information
-
-This returns detailed anime data including title, episodes, year, studios, synopsis, etc.`,
+- Want to verify anime information`,
   parameters: SearchAniListSchema,
   execute: async (params) => {
     try {
       const result = await callNestAPI(
-        '/api/animes/anilist/search',
-        'GET',
-        authToken,
-        params
+          '/api/animes/anilist/search',
+          'GET',
+          authToken,
+          params
       );
       return {
         success: true,
@@ -204,31 +238,29 @@ Use this when admin provides an image URL to set as the anime cover.`,
   parameters: UploadCoverImageSchema,
   execute: async (params) => {
     try {
-      // Step 1: Upload image to ImageKit via media service
       const uploadResult = await callNestAPI(
-        '/api/media/upload-from-url',
-        'POST',
-        authToken,
-        {
-          imageUrl: params.imageUrl,
-          type: 'anime',
-          relatedId: params.animeId,
-          saveAsScreenshot: false, // Cover image, not screenshot
-        }
+          '/api/media/upload-from-url',
+          'POST',
+          authToken,
+          {
+            imageUrl: params.imageUrl,
+            type: 'anime',
+            relatedId: params.animeId,
+            saveAsScreenshot: false,
+          }
       );
 
       if (!uploadResult.filename) {
         throw new Error('Upload succeeded but no filename returned');
       }
 
-      // Step 2: Update anime record with the uploaded image filename
       const updateResult = await callNestAPI(
-        `/api/admin/animes/${params.animeId}`,
-        'PUT',
-        authToken,
-        {
-          image: uploadResult.filename,
-        }
+          `/api/admin/animes/${params.animeId}`,
+          'PUT',
+          authToken,
+          {
+            image: uploadResult.filename,
+          }
       );
 
       return {
@@ -251,31 +283,22 @@ Use this when admin provides an image URL to set as the anime cover.`,
 
 /**
  * Tool: Upload Screenshot for Anime
- * Downloads screenshot from URL and uploads to ImageKit screenshots folder
  */
 export const uploadScreenshotTool = (authToken?: string) => tool({
-  description: `Upload a screenshot for an anime from a URL.
-
-This tool:
-1. Downloads the screenshot from the provided URL
-2. Uploads it to ImageKit in images/animes/screenshots/ folder
-3. Saves to ak_screenshots table with type=1 (anime) and url_screen=screenshots/{filename}
-
-Important: Screenshots are stored separately from cover images.
-Use this to add visual content/scenes from the anime.`,
+  description: `Upload a screenshot for an anime from a URL.`,
   parameters: UploadScreenshotSchema,
   execute: async (params) => {
     try {
       const uploadResult = await callNestAPI(
-        '/api/media/upload-from-url',
-        'POST',
-        authToken,
-        {
-          imageUrl: params.imageUrl,
-          type: 'anime',
-          relatedId: params.animeId,
-          saveAsScreenshot: true, // Save to ak_screenshots table with type=1
-        }
+          '/api/media/upload-from-url',
+          'POST',
+          authToken,
+          {
+            imageUrl: params.imageUrl,
+            type: 'anime',
+            relatedId: params.animeId,
+            saveAsScreenshot: true,
+          }
       );
 
       return {
@@ -298,7 +321,258 @@ Use this to add visual content/scenes from the anime.`,
 });
 
 /**
- * Export all tools as an object for easy access
+ * Tool: List All Seasons
+ */
+export const listSeasonsTool = (authToken?: string) => tool({
+  description: `List all anime seasons from the database.
+
+⚠️ Format as:
+"Voici les X saison(s) :
+
+1. ❄️ **Hiver 2025**
+   🆔 ID : [id] • [✅ Visible / 🔒 Cachée]"
+
+Season emojis: 1=❄️, 2=🌸, 3=☀️, 4=🍂`,
+  parameters: ListSeasonsSchema,
+  execute: async () => {
+    try {
+      const result = await callNestAPI('/api/seasons', 'GET', authToken);
+      return {
+        success: true,
+        data: result,
+        message: `Found ${result.length || 0} season(s)`,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  },
+});
+
+/**
+ * Tool: Get Current Season
+ */
+export const getCurrentSeasonTool = (authToken?: string) => tool({
+  description: `Get the current active anime season.`,
+  parameters: GetCurrentSeasonSchema,
+  execute: async () => {
+    try {
+      const result = await callNestAPI('/api/seasons/current', 'GET', authToken);
+      return {
+        success: true,
+        data: result,
+        message: result ? `Current season: ${result.nom_saison} ${result.annee}` : 'No current season set',
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  },
+});
+
+/**
+ * Tool: Get Last Created Season
+ */
+export const getLastCreatedSeasonTool = (authToken?: string) => tool({
+  description: `Get the last created anime season.`,
+  parameters: GetLastCreatedSeasonSchema,
+  execute: async () => {
+    try {
+      const result = await callNestAPI('/api/seasons/last-created', 'GET', authToken);
+      return {
+        success: true,
+        data: result,
+        message: result ? `Last created: ${result.nom_saison} ${result.annee}` : 'No seasons found',
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  },
+});
+
+/**
+ * Tool: Create New Season
+ */
+export const createSeasonTool = (authToken?: string) => tool({
+  description: `Create a new anime season.
+
+IMPORTANT: Check if season exists first using listSeasons.
+Do NOT create duplicate seasons (same year + season number).`,
+  parameters: CreateSeasonSchema,
+  execute: async (params) => {
+    try {
+      const allSeasons = await callNestAPI('/api/seasons', 'GET', authToken);
+      const existingSeason = allSeasons.find(
+          (s: any) => s.annee === params.annee && s.saison === params.saison
+      );
+
+      if (existingSeason) {
+        const seasonNames = { 1: 'hiver', 2: 'printemps', 3: 'été', 4: 'automne' };
+        return {
+          success: false,
+          error: `Season already exists: ${seasonNames[params.saison as 1|2|3|4]} ${params.annee}`,
+          data: existingSeason,
+        };
+      }
+
+      const result = await callNestAPI('/api/admin/seasons', 'POST', authToken, params);
+      const seasonNames = { 1: 'hiver', 2: 'printemps', 3: 'été', 4: 'automne' };
+      return {
+        success: true,
+        data: result,
+        message: `Season ${seasonNames[params.saison as 1|2|3|4]} ${params.annee} created`,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  },
+});
+
+/**
+ * Tool: Update Season Status
+ */
+export const updateSeasonStatusTool = (authToken?: string) => tool({
+  description: `Update the visibility status of a season (0=hidden, 1=visible).`,
+  parameters: UpdateSeasonStatusSchema,
+  execute: async (params) => {
+    try {
+      const result = await callNestAPI(
+          `/api/admin/seasons/${params.id}`,
+          'PATCH',
+          authToken,
+          { statut: params.statut }
+      );
+      const statusText = params.statut === 1 ? 'visible' : 'hidden';
+      return {
+        success: true,
+        data: result,
+        message: `Season ID ${params.id} is now ${statusText}`,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  },
+});
+
+/**
+ * Tool: Add Anime to Season
+ */
+export const addAnimeToSeasonTool = (authToken?: string) => tool({
+  description: `Add an anime to a specific season.`,
+  parameters: AddAnimeToSeasonSchema,
+  execute: async (params) => {
+    try {
+      const result = await callNestAPI(
+          `/api/admin/seasons/${params.seasonId}/animes`,
+          'POST',
+          authToken,
+          { animeId: params.animeId }
+      );
+      return {
+        success: true,
+        data: result,
+        message: `Anime ID ${params.animeId} added to season ID ${params.seasonId}`,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  },
+});
+
+/**
+ * Tool: Remove Anime from Season
+ */
+export const removeAnimeFromSeasonTool = (authToken?: string) => tool({
+  description: `Remove an anime from a specific season.`,
+  parameters: RemoveAnimeFromSeasonSchema,
+  execute: async (params) => {
+    try {
+      const result = await callNestAPI(
+          `/api/admin/seasons/${params.seasonId}/animes/${params.animeId}`,
+          'DELETE',
+          authToken
+      );
+      return {
+        success: true,
+        data: result,
+        message: `Anime ID ${params.animeId} removed from season ID ${params.seasonId}`,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  },
+});
+
+/**
+ * Tool: Delete Season
+ */
+export const deleteSeasonTool = (authToken?: string) => tool({
+  description: `Delete a season from the database. WARNING: Destructive action.`,
+  parameters: DeleteSeasonSchema,
+  execute: async (params) => {
+    try {
+      const result = await callNestAPI(
+          `/api/admin/seasons/${params.id}`,
+          'DELETE',
+          authToken
+      );
+      return {
+        success: true,
+        data: result,
+        message: `Season ID ${params.id} deleted successfully`,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  },
+});
+
+/**
+ * Export all tools as an array for AI SDK (RECOMMENDED)
+ */
+export function getToolsArray(authToken?: string) {
+  return [
+    listAnimesTool(authToken),
+    createAnimeTool(authToken),
+    updateAnimeStatusTool(authToken),
+    searchAniListTool(authToken),
+    uploadCoverImageTool(authToken),
+    uploadScreenshotTool(authToken),
+    listSeasonsTool(authToken),
+    getCurrentSeasonTool(authToken),
+    getLastCreatedSeasonTool(authToken),
+    createSeasonTool(authToken),
+    updateSeasonStatusTool(authToken),
+    addAnimeToSeasonTool(authToken),
+    removeAnimeFromSeasonTool(authToken),
+    deleteSeasonTool(authToken),
+  ];
+}
+
+/**
+ * Export all tools as an object (LEGACY - for backwards compatibility)
  */
 export function getTools(authToken?: string) {
   return {
@@ -308,5 +582,13 @@ export function getTools(authToken?: string) {
     searchAniList: searchAniListTool(authToken),
     uploadCoverImage: uploadCoverImageTool(authToken),
     uploadScreenshot: uploadScreenshotTool(authToken),
+    listSeasons: listSeasonsTool(authToken),
+    getCurrentSeason: getCurrentSeasonTool(authToken),
+    getLastCreatedSeason: getLastCreatedSeasonTool(authToken),
+    createSeason: createSeasonTool(authToken),
+    updateSeasonStatus: updateSeasonStatusTool(authToken),
+    addAnimeToSeason: addAnimeToSeasonTool(authToken),
+    removeAnimeFromSeason: removeAnimeFromSeasonTool(authToken),
+    deleteSeason: deleteSeasonTool(authToken),
   };
 }
