@@ -1,7 +1,7 @@
 // app/api/chat/route.ts
 import { streamText } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { getToolsArray } from '@/lib/tools';
+import { getTools } from '@/lib/tools';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/ratelimit';
 
 const SYSTEM_PROMPT = `You are an AI assistant for managing an anime database in French.
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
     }
 
     const model = google('gemini-2.5-flash');
-    const tools = getToolsArray(authToken);
+    const tools = getTools(authToken);
 
     console.log('[Chat] Processing request with', messages.length, 'messages');
 
