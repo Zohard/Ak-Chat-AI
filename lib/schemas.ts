@@ -5,8 +5,8 @@ import { z } from 'zod';
  * Maps to GET /api/admin/animes
  */
 export const AnimeListSchema = z.object({
-  page: z.number().int().positive().default(1).describe('Page number for pagination'),
-  limit: z.number().int().positive().max(100).default(20).describe('Number of results per page'),
+  page: z.number().int().min(1).default(1).describe('Page number for pagination'),
+  limit: z.number().int().min(1).max(100).default(20).describe('Number of results per page'),
   search: z.string().optional().describe('Search query for anime title'),
   annee: z.number().int().min(1900).max(2100).optional().describe('Filter by year'),
   ficheComplete: z.number().int().min(0).max(1).optional().describe('Filter by completion status: 0=incomplete, 1=complete'),
@@ -41,10 +41,10 @@ export const CreateAnimeSchema = z.object({
 
 /**
  * Schema for updating anime status
- * Maps to PUT /api/admin/animes/:id
+ * Maps to PUT /api/admin/animes/:id/status
  */
 export const UpdateAnimeStatusSchema = z.object({
-  id: z.number().int().positive().describe('Anime ID to update'),
+  id: z.number().int().min(1).describe('Anime ID to update'),
   statut: z.number().int().min(0).max(2).describe('New status: 0=pending, 1=published, 2=refused'),
 });
 
@@ -54,7 +54,7 @@ export const UpdateAnimeStatusSchema = z.object({
  */
 export const SearchAniListSchema = z.object({
   q: z.string().min(1).describe('Search query for anime title'),
-  limit: z.number().int().positive().max(50).default(10).describe('Maximum number of results'),
+  limit: z.number().int().min(1).max(50).default(10).describe('Maximum number of results'),
 });
 
 /**

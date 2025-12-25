@@ -129,7 +129,7 @@ You must first use listAnimes to get the anime ID.`,
   execute: async (params) => {
     try {
       const result = await callNestAPI(
-        `/api/admin/animes/${params.id}`,
+        `/api/admin/animes/${params.id}/status`,
         'PUT',
         authToken,
         { statut: params.statut }
