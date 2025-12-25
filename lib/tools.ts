@@ -4,6 +4,8 @@ import {
   CreateAnimeSchema,
   UpdateAnimeStatusSchema,
   SearchAniListSchema,
+  UploadCoverImageSchema,
+  UploadScreenshotSchema,
 } from './schemas';
 
 const API_BASE = process.env.NESTJS_API_BASE || 'http://localhost:3002';
@@ -187,6 +189,115 @@ This returns detailed anime data including title, episodes, year, studios, synop
 });
 
 /**
+ * Tool: Upload Cover Image for Anime
+ * Downloads image from URL, uploads to ImageKit, and sets as anime cover
+ */
+export const uploadCoverImageTool = (authToken?: string) => tool({
+  description: `Upload a cover image for an anime from a URL.
+
+This tool:
+1. Downloads the image from the provided URL
+2. Uploads it to ImageKit (CDN) in the images/animes/ folder
+3. Sets the filename as the anime's cover image
+
+Use this when admin provides an image URL to set as the anime cover.`,
+  parameters: UploadCoverImageSchema,
+  execute: async (params) => {
+    try {
+      // Step 1: Upload image to ImageKit via media service
+      const uploadResult = await callNestAPI(
+        '/api/media/upload-from-url',
+        'POST',
+        authToken,
+        {
+          imageUrl: params.imageUrl,
+          type: 'anime',
+          relatedId: params.animeId,
+          saveAsScreenshot: false, // Cover image, not screenshot
+        }
+      );
+
+      if (!uploadResult.filename) {
+        throw new Error('Upload succeeded but no filename returned');
+      }
+
+      // Step 2: Update anime record with the uploaded image filename
+      const updateResult = await callNestAPI(
+        `/api/admin/animes/${params.animeId}`,
+        'PUT',
+        authToken,
+        {
+          image: uploadResult.filename,
+        }
+      );
+
+      return {
+        success: true,
+        data: {
+          animeId: params.animeId,
+          filename: uploadResult.filename,
+          url: uploadResult.url,
+        },
+        message: `Cover image uploaded and set for anime ID ${params.animeId}`,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  },
+});
+
+/**
+ * Tool: Upload Screenshot for Anime
+ * Downloads screenshot from URL and uploads to ImageKit screenshots folder
+ */
+export const uploadScreenshotTool = (authToken?: string) => tool({
+  description: `Upload a screenshot for an anime from a URL.
+
+This tool:
+1. Downloads the screenshot from the provided URL
+2. Uploads it to ImageKit in images/animes/screenshots/ folder
+3. Saves to ak_screenshots table with type=1 (anime) and url_screen=screenshots/{filename}
+
+Important: Screenshots are stored separately from cover images.
+Use this to add visual content/scenes from the anime.`,
+  parameters: UploadScreenshotSchema,
+  execute: async (params) => {
+    try {
+      const uploadResult = await callNestAPI(
+        '/api/media/upload-from-url',
+        'POST',
+        authToken,
+        {
+          imageUrl: params.imageUrl,
+          type: 'anime',
+          relatedId: params.animeId,
+          saveAsScreenshot: true, // Save to ak_screenshots table with type=1
+        }
+      );
+
+      return {
+        success: true,
+        data: {
+          screenshotId: uploadResult.id,
+          animeId: params.animeId,
+          filename: uploadResult.filename,
+          url: uploadResult.url,
+        },
+        message: `Screenshot uploaded for anime ID ${params.animeId}`,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  },
+});
+
+/**
  * Export all tools as an object for easy access
  */
 export function getTools(authToken?: string) {
@@ -195,5 +306,7 @@ export function getTools(authToken?: string) {
     createAnime: createAnimeTool(authToken),
     updateAnimeStatus: updateAnimeStatusTool(authToken),
     searchAniList: searchAniListTool(authToken),
+    uploadCoverImage: uploadCoverImageTool(authToken),
+    uploadScreenshot: uploadScreenshotTool(authToken),
   };
 }

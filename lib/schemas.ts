@@ -58,9 +58,29 @@ export const SearchAniListSchema = z.object({
 });
 
 /**
+ * Schema for uploading cover image from URL
+ * Maps to POST /api/media/upload-from-url + PUT /api/admin/animes/:id
+ */
+export const UploadCoverImageSchema = z.object({
+  animeId: z.number().int().min(1).describe('Anime ID to set cover image for'),
+  imageUrl: z.string().url().describe('URL of the image to download and upload'),
+});
+
+/**
+ * Schema for uploading screenshot from URL
+ * Maps to POST /api/media/upload-from-url
+ */
+export const UploadScreenshotSchema = z.object({
+  animeId: z.number().int().min(1).describe('Anime ID to add screenshot for'),
+  imageUrl: z.string().url().describe('URL of the screenshot to download and upload'),
+});
+
+/**
  * Type exports for TypeScript
  */
 export type AnimeListParams = z.infer<typeof AnimeListSchema>;
 export type CreateAnimeParams = z.infer<typeof CreateAnimeSchema>;
 export type UpdateAnimeStatusParams = z.infer<typeof UpdateAnimeStatusSchema>;
 export type SearchAniListParams = z.infer<typeof SearchAniListSchema>;
+export type UploadCoverImageParams = z.infer<typeof UploadCoverImageSchema>;
+export type UploadScreenshotParams = z.infer<typeof UploadScreenshotSchema>;

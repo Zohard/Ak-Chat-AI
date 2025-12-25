@@ -123,6 +123,16 @@ Approve anime ID 123
 Show me animes from 2023
 ```
 
+**Set cover image:**
+```
+Set cover image for anime ID 123 from https://example.com/poster.jpg
+```
+
+**Add screenshot:**
+```
+Add screenshot for anime ID 456 from https://example.com/scene.jpg
+```
+
 ## API Tools
 
 The AI has access to these tools:
@@ -131,8 +141,10 @@ The AI has access to these tools:
 |------|-------------|----------|
 | `listAnimes` | Search/filter animes | `GET /api/admin/animes` |
 | `createAnime` | Create new anime | `POST /api/admin/animes` |
-| `updateAnimeStatus` | Approve/reject anime | `PUT /api/admin/animes/:id` |
+| `updateAnimeStatus` | Approve/reject anime | `PUT /api/admin/animes/:id/status` |
 | `searchAniList` | Fetch from AniList | `GET /api/animes/anilist/search` |
+| `uploadCoverImage` | Upload cover image from URL | `POST /api/media/upload-from-url` + `PUT /api/admin/animes/:id` |
+| `uploadScreenshot` | Upload screenshot from URL | `POST /api/media/upload-from-url` |
 
 ## Rate Limiting
 
@@ -184,6 +196,50 @@ location /api/chat {
   proxy_set_header Host $host;
   proxy_cache_bypass $http_upgrade;
 }
+```
+
+## Image & Screenshot Management
+
+### Cover Images vs Screenshots
+
+**Cover Images:**
+- Main poster/cover for the anime
+- Stored in `anime.image` field (just the filename)
+- Uploaded to ImageKit: `images/animes/{filename}`
+- One per anime
+- Example: `attack-on-titan-1702345678.jpg`
+
+**Screenshots:**
+- Additional visual content from the anime (scenes, characters, etc.)
+- Stored in `ak_screenshots` table with:
+  - `type = 1` (anime) or `type = 2` (manga)
+  - `url_screen = screenshots/{filename}.ext`
+  - `id_titre` = anime ID
+- Uploaded to ImageKit: `images/animes/screenshots/{filename}`
+- Multiple per anime
+- Example: `screenshots/demon-slayer-scene-1702345679.jpg`
+
+### How It Works
+
+1. **Admin provides image URL** to the AI assistant
+2. **AI calls uploadCoverImage or uploadScreenshot** with anime ID and URL
+3. **NestJS backend**:
+   - Downloads image from URL
+   - Uploads to ImageKit CDN
+   - Generates safe filename (e.g., `anime-title-timestamp.jpg`)
+   - Saves to database
+4. **Images served via ImageKit** at `https://ik.imagekit.io/akimages/`
+
+### Example AI Prompts
+
+```
+Set cover image for One Piece from https://cdn.myanimelist.net/images/anime/1244/138851.jpg
+```
+
+```
+Add screenshots for Demon Slayer ID 456 from these URLs:
+- https://example.com/scene1.jpg
+- https://example.com/scene2.jpg
 ```
 
 ## Troubleshooting
