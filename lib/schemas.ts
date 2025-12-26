@@ -10,7 +10,7 @@ export const AnimeListSchema = z.object({
   search: z.string().optional().describe('Search query for anime title'),
   annee: z.number().int().min(1900).max(2100).optional().describe('Filter by year'),
   ficheComplete: z.number().int().min(0).max(1).optional().describe('Filter by completion status: 0=incomplete, 1=complete'),
-  statut: z.number().int().min(0).max(2).optional().describe('Filter by status: 0=pending, 1=published, 2=refused'),
+  statut: z.number().int().min(0).max(2).optional().describe('Filter by status: 0=blocked, 1=published, 2=pending'),
   sortBy: z.enum(['dateAjout', 'titre', 'annee']).optional().describe('Sort field'),
   sortOrder: z.enum(['asc', 'desc']).optional().describe('Sort direction'),
 });
@@ -31,7 +31,7 @@ export const CreateAnimeSchema = z.object({
   studio: z.string().optional().describe('Animation studio'),
   realisateur: z.string().optional().describe('Director name'),
   image: z.string().url().optional().describe('Cover image URL'),
-  statut: z.number().int().min(0).max(2).default(0).describe('Status: 0=pending, 1=published, 2=refused'),
+  statut: z.number().int().min(0).max(2).default(0).describe('Status: 0=blocked, 1=published, 2=pending'),
   format: z.string().optional().describe('Format: Série TV, Film, OAV, etc.'),
   licence: z.number().int().optional().describe('Licensor ID'),
   ficheComplete: z.number().int().min(0).max(1).default(0).describe('Completion status: 0=incomplete, 1=complete'),
@@ -45,7 +45,29 @@ export const CreateAnimeSchema = z.object({
  */
 export const UpdateAnimeStatusSchema = z.object({
   id: z.number().int().min(1).describe('Anime ID to update'),
-  statut: z.number().int().min(0).max(2).describe('New status: 0=pending, 1=published, 2=refused'),
+  statut: z.number().int().min(0).max(2).describe('New status: 0=blocked, 1=published, 2=pending'),
+});
+
+/**
+ * Schema for updating anime information
+ * Maps to PUT /api/admin/animes/:id
+ */
+export const UpdateAnimeSchema = z.object({
+  id: z.number().int().min(1).describe('Anime ID to update'),
+  annee: z.number().int().min(1900).max(2100).optional().describe('Release year'),
+  titreOrig: z.string().optional().describe('Original title (usually Japanese)'),
+  nbEp: z.number().int().min(0).optional().describe('Number of episodes'),
+  synopsis: z.string().optional().describe('Synopsis/description'),
+  statut: z.number().int().min(0).max(2).optional().describe('Status: 0=blocked, 1=published, 2=pending'),
+  format: z.string().optional().describe('Format: Série TV, Film, OAV, Spécial, etc.'),
+  titreFr: z.string().optional().describe('French title'),
+  titresAlternatifs: z.string().optional().describe('Alternative titles, newline separated'),
+  editeur: z.string().optional().describe('Publisher/Editor'),
+  nbEpduree: z.string().optional().describe('Episode count with duration (e.g., "12", "24+")'),
+  officialSite: z.string().optional().describe('Official website URL'),
+  commentaire: z.string().optional().describe('Comments about the anime entry'),
+  ficheComplete: z.number().int().min(0).max(1).optional().describe('Completion status: 0=incomplete, 1=complete'),
+  dateDiffusion: z.string().optional().describe('Air date in YYYY-MM-DD format (convert from DD/MM/YYYY if user provides that format)'),
 });
 
 /**
@@ -144,6 +166,7 @@ export const DeleteSeasonSchema = z.object({
 export type AnimeListParams = z.infer<typeof AnimeListSchema>;
 export type CreateAnimeParams = z.infer<typeof CreateAnimeSchema>;
 export type UpdateAnimeStatusParams = z.infer<typeof UpdateAnimeStatusSchema>;
+export type UpdateAnimeParams = z.infer<typeof UpdateAnimeSchema>;
 export type SearchAniListParams = z.infer<typeof SearchAniListSchema>;
 export type UploadCoverImageParams = z.infer<typeof UploadCoverImageSchema>;
 export type UploadScreenshotParams = z.infer<typeof UploadScreenshotSchema>;

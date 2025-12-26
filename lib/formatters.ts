@@ -48,9 +48,9 @@ export function formatAnimeListResponse(data: ApiResponse): string {
     }
 
     const statusMap: Record<number, string> = {
-        0: '🟡 En attente de modération',
-        1: '✅ Publié',
-        2: '❌ Refusé',
+        0: '❌ Bloquée',
+        1: '✅ Affichée',
+        2: '🟡 En attente',
     };
 
     let response = `J'ai trouvé **${total} anime(s)** :\n\n`;

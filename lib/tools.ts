@@ -3,6 +3,7 @@ import {
   AnimeListSchema,
   CreateAnimeSchema,
   UpdateAnimeStatusSchema,
+  UpdateAnimeSchema,
   SearchAniListSchema,
   UploadCoverImageSchema,
   UploadScreenshotSchema,
@@ -76,7 +77,7 @@ export function getTools(authToken?: string) {
     }),
 
     updateAnimeStatus: tool({
-      description: 'Update anime status (0=pending, 1=published, 2=refused)',
+      description: 'Update anime status (0=blocked, 1=published, 2=pending)',
       inputSchema: UpdateAnimeStatusSchema,
       execute: async (params: any, options) => {
         const result = await callNestAPI(
@@ -84,6 +85,21 @@ export function getTools(authToken?: string) {
           'PUT',
           authToken,
           { statut: params.statut }
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    updateAnime: tool({
+      description: 'Update anime information (title, episodes, air date, synopsis, etc.). Use listAnimes first to find the correct ID if searching by name.',
+      inputSchema: UpdateAnimeSchema,
+      execute: async (params: any, options) => {
+        const { id, ...updateData } = params;
+        const result = await callNestAPI(
+          `/api/admin/animes/${id}`,
+          'PUT',
+          authToken,
+          updateData
         );
         return { success: true, data: result };
       },
