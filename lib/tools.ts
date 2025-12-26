@@ -14,6 +14,7 @@ import {
   UpdateSeasonStatusSchema,
   AddAnimeToSeasonSchema,
   RemoveAnimeFromSeasonSchema,
+  SearchAniListBySeasonSchema,
   DeleteSeasonSchema,
 } from './schemas';
 
@@ -244,6 +245,19 @@ export function getTools(authToken?: string) {
           authToken
         );
         return { success: true, data: result };
+      },
+    }),
+
+    searchAniListBySeason: tool({
+      description: 'Search for anime on AniList by season (e.g., Winter 2026). Returns list of anime from AniList for that season with comparison to existing database entries.',
+      inputSchema: SearchAniListBySeasonSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/animes/anilist/season/${params.season}/${params.year}?limit=${params.limit || 50}`,
+          'GET',
+          authToken
+        );
+        return result;
       },
     }),
 

@@ -152,6 +152,7 @@ The AI has access to these tools:
 | `createAnime` | Create new anime | `POST /api/admin/animes` |
 | `updateAnimeStatus` | Approve/reject anime | `PUT /api/admin/animes/:id/status` |
 | `searchAniList` | Fetch from AniList | `GET /api/animes/anilist/search` |
+| `searchAniListBySeason` | Search AniList by season (e.g., Winter 2026) | `GET /api/animes/anilist/season/:season/:year` |
 | `uploadCoverImage` | Upload cover image from URL | `POST /api/media/upload-from-url` + `PUT /api/admin/animes/:id` |
 | `uploadScreenshot` | Upload screenshot from URL | `POST /api/media/upload-from-url` |
 

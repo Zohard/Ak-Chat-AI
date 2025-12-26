@@ -152,6 +152,66 @@ export function formatAniListResponse(data: ApiResponse): string {
 }
 
 /**
+ * Format AniList seasonal search results
+ */
+export function formatAniListSeasonalResponse(data: any): string {
+    if (!data || !data.comparisons || data.comparisons.length === 0) {
+        return `Aucun anime trouvé sur AniList pour cette saison.`;
+    }
+
+    const seasonNames: Record<string, string> = {
+        winter: 'Hiver',
+        spring: 'Printemps',
+        summer: 'Été',
+        fall: 'Automne',
+    };
+
+    const seasonName = seasonNames[data.season] || data.season;
+    const comparisons = data.comparisons;
+
+    let response = `📺 **${seasonName} ${data.year}** - ${data.total} anime(s) trouvés sur AniList\n\n`;
+
+    // Group by status
+    const inDb = comparisons.filter((c: any) => c.existsInDb);
+    const notInDb = comparisons.filter((c: any) => !c.existsInDb);
+
+    if (inDb.length > 0) {
+        response += `✅ **Déjà dans la base (${inDb.length}):**\n`;
+        inDb.slice(0, 10).forEach((item: any, index: number) => {
+            const title = item.anilistData.title.romaji || item.anilistData.title.english;
+            response += `${index + 1}. ${title}`;
+            if (item.dbData) {
+                response += ` (ID: ${item.dbData.idAnime})`;
+            }
+            response += `\n`;
+        });
+        response += `\n`;
+    }
+
+    if (notInDb.length > 0) {
+        response += `➕ **Pas encore dans la base (${notInDb.length}):**\n`;
+        notInDb.slice(0, 10).forEach((item: any, index: number) => {
+            const aniData = item.anilistData;
+            const title = aniData.title.romaji || aniData.title.english;
+            response += `${index + 1}. ${title}`;
+            if (aniData.format) {
+                response += ` [${aniData.format}]`;
+            }
+            if (aniData.episodes) {
+                response += ` - ${aniData.episodes} ép.`;
+            }
+            response += `\n`;
+        });
+    }
+
+    if (comparisons.length > 20) {
+        response += `\n_Affichage des 20 premiers résultats sur ${comparisons.length}._`;
+    }
+
+    return response;
+}
+
+/**
  * Format generic success message
  */
 export function formatSuccessMessage(message: string, details?: Record<string, any>): string {
@@ -195,6 +255,9 @@ export function ensureUserFriendlyResponse(response: string): string {
         } else if (Array.isArray(data.data) && data.data[0]?.saison) {
             // Season list response
             return formatSeasonListResponse(data);
+        } else if (data.comparisons && Array.isArray(data.comparisons) && data.season && data.year) {
+            // AniList seasonal search response
+            return formatAniListSeasonalResponse(data);
         } else if (data.data?.animes) {
             // AniList search response
             return formatAniListResponse(data);

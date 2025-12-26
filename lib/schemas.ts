@@ -153,6 +153,16 @@ export const RemoveAnimeFromSeasonSchema = z.object({
 });
 
 /**
+ * Schema for searching anime by season on AniList
+ * Maps to GET /api/animes/anilist/season/:season/:year
+ */
+export const SearchAniListBySeasonSchema = z.object({
+  season: z.enum(['winter', 'spring', 'summer', 'fall']).describe('Season: winter, spring, summer, or fall'),
+  year: z.number().int().min(2000).max(2100).describe('Year for the season (e.g., 2026)'),
+  limit: z.number().int().min(1).max(100).default(50).describe('Maximum number of results to return'),
+});
+
+/**
  * Schema for deleting a season
  * Maps to DELETE /api/admin/seasons/:id
  */
