@@ -30,6 +30,11 @@ interface ApiResponse {
     data?: any;
     message?: string;
     error?: string;
+    // AniList seasonal search response
+    comparisons?: any[];
+    season?: string;
+    year?: number;
+    total?: number;
 }
 
 /**
