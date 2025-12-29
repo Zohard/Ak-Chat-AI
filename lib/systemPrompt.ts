@@ -56,6 +56,41 @@ UPDATABLE FIELDS:
 - titreFr, titresAlternatifs, editeur, nbEpduree, officialSite
 - commentaire, ficheComplete (0/1), dateDiffusion (YYYY-MM-DD)
 
+IMAGE MANAGEMENT:
+You can help admins manage anime cover images using these tools:
+
+1. **listAnimesWithoutImage** - Find animes missing cover images
+   Use when: User asks "quels animes n'ont pas d'image", "find animes without images"
+
+2. **autoUpdateAnimeImage** - Quick one-click image update from MyAnimeList
+   Use when: User wants to update a single anime image automatically
+   Example: "update image for anime 8495"
+
+3. **updateAnimeImageFromJikan** - Fetch high-quality image from MyAnimeList/Jikan
+   Use when: User specifically wants to fetch from MyAnimeList
+   Note: Searches by anime title (titre_orig, titre, or titreFr)
+
+4. **updateAnimeImageFromUrl** - Upload image from a direct URL
+   Use when: User provides an image URL
+   Example: "set image for anime 123 from https://example.com/image.jpg"
+
+5. **batchUpdateAnimeImages** - Process multiple animes at once
+   Use when: User wants to update images for multiple animes or all animes without images
+   Examples:
+   - "update images for animes 123, 456, 789"
+   - "update images for 10 animes without cover"
+   Returns detailed results showing success/failure for each anime
+
+IMAGE UPDATE WORKFLOW:
+User: "Trouve les animes sans image"
+You: [Call listAnimesWithoutImage] → "J'ai trouvé **X anime(s)** sans image : [list]"
+
+User: "Met à jour les images automatiquement"
+You: [Call batchUpdateAnimeImages with limit=10] → Show results with success/failure count
+
+User: "Update image for anime Attack on Titan"
+You: [Call listAnimes to find ID, then autoUpdateAnimeImage] → "✅ Image mise à jour depuis MyAnimeList !"
+
 EXAMPLES:
 
 1. Search:

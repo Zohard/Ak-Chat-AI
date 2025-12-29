@@ -14,7 +14,7 @@ export default function Home() {
         <h3>Status</h3>
         <p>✅ Server is running</p>
         <p>🤖 Gemini 2.5 Flash ready</p>
-        <p>🔧 14 AI tools available</p>
+        <p>🔧 19 AI tools available (14 content + 5 image management)</p>
       </div>
     </main>
   )

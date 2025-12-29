@@ -171,6 +171,49 @@ export const DeleteSeasonSchema = z.object({
 });
 
 /**
+ * Schema for listing animes without images
+ * Maps to GET /animes/no-image
+ */
+export const ListAnimesNoImageSchema = z.object({
+  page: z.number().int().min(1).default(1).describe('Page number'),
+  limit: z.number().int().min(1).max(100).default(50).describe('Number of results per page'),
+});
+
+/**
+ * Schema for batch updating images from Jikan
+ * Maps to POST /animes/batch-image/jikan
+ */
+export const BatchUpdateImagesJikanSchema = z.object({
+  animeIds: z.array(z.number().int().min(1)).optional().describe('Specific anime IDs to process. If not provided, processes animes without images'),
+  limit: z.number().int().min(1).max(50).default(10).describe('Number of animes to process if no IDs provided'),
+});
+
+/**
+ * Schema for auto-updating anime image
+ * Maps to POST /animes/:id/auto-image
+ */
+export const AutoUpdateAnimeImageSchema = z.object({
+  animeId: z.number().int().min(1).describe('Anime ID to update image for'),
+});
+
+/**
+ * Schema for updating anime image from Jikan
+ * Maps to POST /animes/:id/image/jikan
+ */
+export const UpdateAnimeImageJikanSchema = z.object({
+  animeId: z.number().int().min(1).describe('Anime ID to update image for'),
+});
+
+/**
+ * Schema for updating anime image from URL
+ * Maps to POST /animes/:id/image/url
+ */
+export const UpdateAnimeImageUrlSchema = z.object({
+  animeId: z.number().int().min(1).describe('Anime ID to update image for'),
+  imageUrl: z.string().url().describe('URL of the image to download and upload'),
+});
+
+/**
  * Type exports for TypeScript
  */
 export type AnimeListParams = z.infer<typeof AnimeListSchema>;
@@ -188,3 +231,8 @@ export type UpdateSeasonStatusParams = z.infer<typeof UpdateSeasonStatusSchema>;
 export type AddAnimeToSeasonParams = z.infer<typeof AddAnimeToSeasonSchema>;
 export type RemoveAnimeFromSeasonParams = z.infer<typeof RemoveAnimeFromSeasonSchema>;
 export type DeleteSeasonParams = z.infer<typeof DeleteSeasonSchema>;
+export type ListAnimesNoImageParams = z.infer<typeof ListAnimesNoImageSchema>;
+export type BatchUpdateImagesJikanParams = z.infer<typeof BatchUpdateImagesJikanSchema>;
+export type AutoUpdateAnimeImageParams = z.infer<typeof AutoUpdateAnimeImageSchema>;
+export type UpdateAnimeImageJikanParams = z.infer<typeof UpdateAnimeImageJikanSchema>;
+export type UpdateAnimeImageUrlParams = z.infer<typeof UpdateAnimeImageUrlSchema>;

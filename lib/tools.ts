@@ -16,6 +16,11 @@ import {
   RemoveAnimeFromSeasonSchema,
   SearchAniListBySeasonSchema,
   DeleteSeasonSchema,
+  ListAnimesNoImageSchema,
+  BatchUpdateImagesJikanSchema,
+  AutoUpdateAnimeImageSchema,
+  UpdateAnimeImageJikanSchema,
+  UpdateAnimeImageUrlSchema,
 } from './schemas';
 
 const API_BASE = process.env.NESTJS_API_BASE || 'http://localhost:3002';
@@ -156,6 +161,64 @@ export function getTools(authToken?: string) {
             relatedId: params.animeId,
             saveAsScreenshot: true,
           }
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    listAnimesWithoutImage: tool({
+      description: 'List animes that have no cover image. Useful for finding which animes need images added.',
+      inputSchema: ListAnimesNoImageSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI('/animes/no-image', 'GET', authToken, params);
+        return { success: true, data: result };
+      },
+    }),
+
+    batchUpdateAnimeImages: tool({
+      description: 'Batch update images for multiple animes from Jikan/MyAnimeList. Can process specific anime IDs or automatically process animes without images. Returns detailed results for each anime.',
+      inputSchema: BatchUpdateImagesJikanSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI('/animes/batch-image/jikan', 'POST', authToken, params);
+        return { success: true, data: result };
+      },
+    }),
+
+    autoUpdateAnimeImage: tool({
+      description: 'Automatically update anime cover image by fetching from Jikan/MyAnimeList. This is a simplified one-click solution.',
+      inputSchema: AutoUpdateAnimeImageSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/animes/${params.animeId}/auto-image`,
+          'POST',
+          authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    updateAnimeImageFromJikan: tool({
+      description: 'Update anime cover image by fetching from Jikan/MyAnimeList API. Searches by anime title and uploads high-quality image.',
+      inputSchema: UpdateAnimeImageJikanSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/animes/${params.animeId}/image/jikan`,
+          'POST',
+          authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    updateAnimeImageFromUrl: tool({
+      description: 'Update anime cover image from a direct image URL. Downloads the image and uploads to ImageKit.',
+      inputSchema: UpdateAnimeImageUrlSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/animes/${params.animeId}/image/url`,
+          'POST',
+          authToken,
+          { imageUrl: params.imageUrl }
         );
         return { success: true, data: result };
       },
