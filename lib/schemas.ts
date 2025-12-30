@@ -27,7 +27,7 @@ export const CreateAnimeSchema = z.object({
   titresAlternatifs: z.string().optional().describe('Alternative titles, newline separated'),
   annee: z.number().int().min(1900).max(2100).describe('Release year'),
   nbEp: z.number().int().nonnegative().describe('Number of episodes'),
-  synopsis: z.string().min(10).describe('Synopsis/description of the anime'),
+  synopsis: z.string().optional().describe('Synopsis/description of the anime'),
   studio: z.string().optional().describe('Animation studio'),
   realisateur: z.string().optional().describe('Director name'),
   image: z.string().url().optional().describe('Cover image URL'),

@@ -190,7 +190,7 @@ export function getTools(authToken?: string) {
       description: 'List animes that have no cover image. Useful for finding which animes need images added.',
       inputSchema: ListAnimesNoImageSchema,
       execute: async (params: any, options) => {
-        const result = await callNestAPI('/animes/no-image', 'GET', authToken, params);
+        const result = await callNestAPI('/api/animes/no-image', 'GET', authToken, params);
         return { success: true, data: result };
       },
     }),
@@ -199,7 +199,7 @@ export function getTools(authToken?: string) {
       description: 'Batch update images for multiple animes from Jikan/MyAnimeList. Can process specific anime IDs or automatically process animes without images. Returns detailed results for each anime.',
       inputSchema: BatchUpdateImagesJikanSchema,
       execute: async (params: any, options) => {
-        const result = await callNestAPI('/animes/batch-image/jikan', 'POST', authToken, params);
+        const result = await callNestAPI('/api/animes/batch-image/jikan', 'POST', authToken, params);
         return { success: true, data: result };
       },
     }),
@@ -209,7 +209,7 @@ export function getTools(authToken?: string) {
       inputSchema: AutoUpdateAnimeImageSchema,
       execute: async (params: any, options) => {
         const result = await callNestAPI(
-          `/animes/${params.animeId}/auto-image`,
+          `/api/animes/${params.animeId}/auto-image`,
           'POST',
           authToken
         );
@@ -222,7 +222,7 @@ export function getTools(authToken?: string) {
       inputSchema: UpdateAnimeImageJikanSchema,
       execute: async (params: any, options) => {
         const result = await callNestAPI(
-          `/animes/${params.animeId}/image/jikan`,
+          `/api/animes/${params.animeId}/image/jikan`,
           'POST',
           authToken
         );
@@ -235,7 +235,7 @@ export function getTools(authToken?: string) {
       inputSchema: UpdateAnimeImageUrlSchema,
       execute: async (params: any, options) => {
         const result = await callNestAPI(
-          `/animes/${params.animeId}/image/url`,
+          `/api/animes/${params.animeId}/image/url`,
           'POST',
           authToken,
           { imageUrl: params.imageUrl }
