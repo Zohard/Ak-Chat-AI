@@ -21,6 +21,26 @@ import {
   AutoUpdateAnimeImageSchema,
   UpdateAnimeImageJikanSchema,
   UpdateAnimeImageUrlSchema,
+  // Manga schemas
+  MangaListSchema,
+  CreateMangaSchema,
+  UpdateMangaStatusSchema,
+  UpdateMangaSchema,
+  SearchAniListMangaSchema,
+  SearchAniListMangaByDateRangeSchema,
+  UploadMangaCoverImageSchema,
+  UploadMangaScreenshotSchema,
+  ListMangasNoImageSchema,
+  BatchUpdateMangaImagesJikanSchema,
+  AutoUpdateMangaImageSchema,
+  UpdateMangaImageJikanSchema,
+  UpdateMangaImageUrlSchema,
+  SearchGoogleBooksMangaSchema,
+  SearchBooknodeMangaSchema,
+  SearchJikanMangaSchema,
+  LookupMangaByIsbnSchema,
+  GetMangaVolumesSchema,
+  CreateMangaVolumeSchema,
 } from './schemas';
 
 const API_BASE = process.env.NESTJS_API_BASE || 'http://localhost:3002';
@@ -332,6 +352,262 @@ export function getTools(authToken?: string) {
           `/api/admin/seasons/${params.id}`,
           'DELETE',
           authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    // ========================================
+    // MANGA TOOLS
+    // ========================================
+
+    listMangas: tool({
+      description: 'Search and list mangas from the database. Use filters for year, status, and completion. Returns paginated results.',
+      inputSchema: MangaListSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI('/api/admin/mangas', 'GET', authToken, params);
+        return { success: true, data: result };
+      },
+    }),
+
+    createManga: tool({
+      description: 'Create a new manga entry in the database. Can include title, author, publisher, volumes, year, synopsis, image, and more.',
+      inputSchema: CreateMangaSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI('/api/admin/mangas', 'POST', authToken, params);
+        return { success: true, data: result };
+      },
+    }),
+
+    updateMangaStatus: tool({
+      description: 'Update manga status (0=blocked, 1=published, 2=pending)',
+      inputSchema: UpdateMangaStatusSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/admin/mangas/${params.id}/status`,
+          'PUT',
+          authToken,
+          { statut: params.statut }
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    updateManga: tool({
+      description: 'Update manga information (title, author, volumes, year, synopsis, etc.). Use listMangas first to find the correct ID if searching by name.',
+      inputSchema: UpdateMangaSchema,
+      execute: async (params: any, options) => {
+        const { id, ...updateData } = params;
+        const result = await callNestAPI(
+          `/api/admin/mangas/${id}`,
+          'PUT',
+          authToken,
+          updateData
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    searchAniListManga: tool({
+      description: 'Search AniList for manga information by title. Returns manga metadata from AniList including author, volumes, year, synopsis, and cover image.',
+      inputSchema: SearchAniListMangaSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI('/api/mangas/anilist/search', 'GET', authToken, params);
+        return { success: true, data: result };
+      },
+    }),
+
+    searchAniListMangaByDateRange: tool({
+      description: 'Search AniList for manga released within a date range. Useful for finding manga from a specific period.',
+      inputSchema: SearchAniListMangaByDateRangeSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/mangas/anilist/daterange/${params.startDate}/${params.endDate}?limit=${params.limit || 200}`,
+          'GET',
+          authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    searchGoogleBooksManga: tool({
+      description: 'Search Google Books for manga releases in a specific month and year. Returns manga found on Google Books.',
+      inputSchema: SearchGoogleBooksMangaSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/mangas/googlebooks/month/${params.year}/${params.month}?maxResults=${params.maxResults || 40}&lang=${params.lang || 'fr'}`,
+          'GET',
+          authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    searchBooknodeManga: tool({
+      description: 'Search Booknode.com for manga releases in a specific month and year. Returns manga found on Booknode.',
+      inputSchema: SearchBooknodeMangaSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/mangas/booknode/month/${params.year}/${params.month}`,
+          'GET',
+          authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    searchJikanManga: tool({
+      description: 'Search Jikan API (MyAnimeList) for manga by title. Returns manga from MyAnimeList with metadata and images.',
+      inputSchema: SearchJikanMangaSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/mangas/jikan/search?q=${encodeURIComponent(params.q)}&limit=${params.limit || 5}`,
+          'GET',
+          authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    lookupMangaByIsbn: tool({
+      description: 'Lookup manga information by ISBN barcode number. Returns manga details from ISBN databases.',
+      inputSchema: LookupMangaByIsbnSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/mangas/isbn/lookup?isbn=${params.isbn}`,
+          'GET',
+          authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    uploadMangaCoverImage: tool({
+      description: 'Upload cover image for manga from URL. Downloads the image and uploads to ImageKit, then sets it as manga cover.',
+      inputSchema: UploadMangaCoverImageSchema,
+      execute: async (params: any, options) => {
+        const uploadResult = await callNestAPI(
+          '/api/media/upload-from-url',
+          'POST',
+          authToken,
+          {
+            imageUrl: params.imageUrl,
+            type: 'manga',
+            relatedId: params.mangaId,
+            saveAsScreenshot: false,
+          }
+        );
+
+        await callNestAPI(
+          `/api/admin/mangas/${params.mangaId}`,
+          'PUT',
+          authToken,
+          { image: uploadResult.filename }
+        );
+
+        return { success: true, data: uploadResult };
+      },
+    }),
+
+    uploadMangaScreenshot: tool({
+      description: 'Upload screenshot for manga from URL. Downloads the image and saves it to the screenshots table.',
+      inputSchema: UploadMangaScreenshotSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          '/api/media/upload-from-url',
+          'POST',
+          authToken,
+          {
+            imageUrl: params.imageUrl,
+            type: 'manga',
+            relatedId: params.mangaId,
+            saveAsScreenshot: true,
+          }
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    listMangasWithoutImage: tool({
+      description: 'List mangas that have no cover image. Useful for finding which mangas need images added.',
+      inputSchema: ListMangasNoImageSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI('/api/mangas/no-image', 'GET', authToken, params);
+        return { success: true, data: result };
+      },
+    }),
+
+    batchUpdateMangaImages: tool({
+      description: 'Batch update images for multiple mangas from Jikan/MyAnimeList. Can process specific manga IDs or automatically process mangas without images. Returns detailed results for each manga.',
+      inputSchema: BatchUpdateMangaImagesJikanSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI('/api/mangas/batch-image/jikan', 'POST', authToken, params);
+        return { success: true, data: result };
+      },
+    }),
+
+    autoUpdateMangaImage: tool({
+      description: 'Automatically update manga cover image by fetching from Jikan/MyAnimeList. This is a simplified one-click solution.',
+      inputSchema: AutoUpdateMangaImageSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/mangas/${params.mangaId}/auto-image`,
+          'POST',
+          authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    updateMangaImageFromJikan: tool({
+      description: 'Update manga cover image by fetching from Jikan/MyAnimeList API. Searches by manga title and uploads high-quality image.',
+      inputSchema: UpdateMangaImageJikanSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/mangas/${params.mangaId}/image/jikan`,
+          'POST',
+          authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    updateMangaImageFromUrl: tool({
+      description: 'Update manga cover image from a direct image URL. Downloads the image and uploads to ImageKit.',
+      inputSchema: UpdateMangaImageUrlSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/mangas/${params.mangaId}/image/url`,
+          'POST',
+          authToken,
+          { imageUrl: params.imageUrl }
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    getMangaVolumes: tool({
+      description: 'Get all volumes for a specific manga. Returns list of manga volumes with their details.',
+      inputSchema: GetMangaVolumesSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/mangas/${params.mangaId}/volumes`,
+          'GET',
+          authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    createMangaVolume: tool({
+      description: 'Create a new manga volume from ISBN barcode scan. Automatically fetches volume details from ISBN databases.',
+      inputSchema: CreateMangaVolumeSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/mangas/${params.mangaId}/volumes/scan`,
+          'POST',
+          authToken,
+          { isbn: params.isbn }
         );
         return { success: true, data: result };
       },

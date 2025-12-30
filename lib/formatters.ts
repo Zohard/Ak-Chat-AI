@@ -17,6 +17,19 @@ interface AnimeItem {
     synopsis?: string;
 }
 
+interface MangaItem {
+    idManga: number;
+    titre: string;
+    titreFr?: string;
+    titreOrig?: string;
+    annee: string;
+    nbVolumes: string;
+    auteur?: string;
+    editeur?: string;
+    statut: number;
+    synopsis?: string;
+}
+
 interface SeasonItem {
     id_saison: number;
     annee: number;
@@ -73,6 +86,62 @@ export function formatAnimeListResponse(data: ApiResponse): string {
 
         response += `\n   📊 Statut : ${status}\n`;
         response += `   🆔 ID : ${anime.idAnime}\n\n`;
+    });
+
+    if (total > 10) {
+        response += `\n_Affichage des 10 premiers résultats sur ${total}._\n`;
+        response += `_Affinez votre recherche pour voir plus de résultats._`;
+    }
+
+    return response;
+}
+
+/**
+ * Format manga list response
+ */
+export function formatMangaListResponse(data: ApiResponse): string {
+    if (!data.success || !data.data) {
+        return `❌ Aucun résultat trouvé.`;
+    }
+
+    const items: MangaItem[] = data.data.items || data.data;
+    const total = data.data.total || items.length;
+
+    if (!items || items.length === 0) {
+        return `Aucun manga trouvé dans la base de données.`;
+    }
+
+    const statusMap: Record<number, string> = {
+        0: '❌ Bloquée',
+        1: '✅ Affichée',
+        2: '🟡 En attente',
+    };
+
+    let response = `J'ai trouvé **${total} manga(s)** :\n\n`;
+
+    items.slice(0, 10).forEach((manga, index) => {
+        const titre = manga.titreFr || manga.titre;
+        const status = statusMap[manga.statut] || '❓ Inconnu';
+
+        response += `${index + 1}. **${titre}** (${manga.annee || 'N/A'})\n`;
+
+        if (manga.auteur) {
+            response += `   📚 Auteur : ${manga.auteur}`;
+        }
+
+        if (manga.nbVolumes) {
+            const nbVol = parseInt(manga.nbVolumes);
+            if (!isNaN(nbVol) && nbVol > 0) {
+                response += manga.auteur ? ` • ${nbVol} volume${nbVol !== 1 ? 's' : ''}` : `   📚 ${nbVol} volume${nbVol !== 1 ? 's' : ''}`;
+            }
+        }
+
+        if (manga.auteur || manga.nbVolumes) {
+            response += `\n`;
+        }
+
+        response += `   📊 Statut : ${status}\n`;
+        response += `   🆔 ID : ${manga.idManga}\n\n`;
     });
 
     if (total > 10) {
@@ -151,6 +220,43 @@ export function formatAniListResponse(data: ApiResponse): string {
 
     if (animes.length > 5) {
         response += `\n_Affichage des 5 premiers résultats sur ${animes.length}._`;
+    }
+
+    return response;
+}
+
+/**
+ * Format AniList manga search results
+ */
+export function formatAniListMangaResponse(data: ApiResponse): string {
+    if (!data.success || !data.data || !data.data.mangas || data.data.mangas.length === 0) {
+        return `Aucun résultat trouvé sur AniList pour cette recherche.`;
+    }
+
+    const mangas = data.data.mangas;
+    let response = `J'ai trouvé **${mangas.length} manga(s)** sur AniList :\n\n`;
+
+    mangas.slice(0, 5).forEach((manga: any, index: number) => {
+        response += `${index + 1}. **${manga.title || manga.titre}**`;
+        if (manga.titleOriginal || manga.titreOrig) {
+            response += ` (${manga.titleOriginal || manga.titreOrig})`;
+        }
+        response += `\n`;
+
+        if (manga.author || manga.auteur) {
+            response += `   ✍️ Auteur : ${manga.author || manga.auteur}\n`;
+        }
+        if (manga.startYear || manga.annee) {
+            response += `   📅 Année : ${manga.startYear || manga.annee}\n`;
+        }
+        if (manga.volumes || manga.nbVolumes) {
+            response += `   📚 Volumes : ${manga.volumes || manga.nbVolumes}\n`;
+        }
+        response += `\n`;
+    });
+
+    if (mangas.length > 5) {
+        response += `\n_Affichage des 5 premiers résultats sur ${mangas.length}._`;
     }
 
     return response;
@@ -255,6 +361,11 @@ export function ensureUserFriendlyResponse(response: string): string {
 
         // Route to appropriate formatter based on data structure
         if (data.data?.items && Array.isArray(data.data.items)) {
+            // Check if it's manga or anime based on field names
+            if (data.data.items.length > 0 && data.data.items[0]?.idManga) {
+                // Manga list response
+                return formatMangaListResponse(data);
+            }
             // Anime list response
             return formatAnimeListResponse(data);
         } else if (Array.isArray(data.data) && data.data[0]?.saison) {
@@ -263,8 +374,11 @@ export function ensureUserFriendlyResponse(response: string): string {
         } else if (data.comparisons && Array.isArray(data.comparisons) && data.season && data.year) {
             // AniList seasonal search response
             return formatAniListSeasonalResponse(data);
+        } else if (data.data?.mangas) {
+            // AniList manga search response
+            return formatAniListMangaResponse(data);
         } else if (data.data?.animes) {
-            // AniList search response
+            // AniList anime search response
             return formatAniListResponse(data);
         } else if (data.success && data.message) {
             // Generic success with message
