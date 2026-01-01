@@ -21,6 +21,7 @@ import {
   AutoUpdateAnimeImageSchema,
   UpdateAnimeImageJikanSchema,
   UpdateAnimeImageUrlSchema,
+  UploadAnimeImageFromFileSchema,
   // Manga schemas
   MangaListSchema,
   CreateMangaSchema,
@@ -35,6 +36,7 @@ import {
   AutoUpdateMangaImageSchema,
   UpdateMangaImageJikanSchema,
   UpdateMangaImageUrlSchema,
+  UploadMangaImageFromFileSchema,
   SearchGoogleBooksMangaSchema,
   SearchBooknodeMangaSchema,
   SearchJikanMangaSchema,
@@ -77,6 +79,50 @@ async function callNestAPI(
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`API Error: ${response.status} - ${errorText}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Upload base64 image to the media service
+ */
+async function uploadBase64Image(
+  base64Data: string,
+  fileName: string,
+  type: 'anime' | 'manga',
+  relatedId: number,
+  authToken?: string
+) {
+  // Convert base64 to buffer
+  const buffer = Buffer.from(base64Data, 'base64');
+
+  // Create a Blob from the buffer
+  const blob = new Blob([buffer], { type: 'image/jpeg' });
+
+  // Create FormData
+  const formData = new FormData();
+  formData.append('file', blob, fileName || 'upload.jpg');
+  formData.append('type', type);
+  formData.append('relatedId', relatedId.toString());
+  formData.append('isScreenshot', 'false');
+
+  // Prepare headers
+  const headers: HeadersInit = {};
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  // Upload to media service
+  const response = await fetch(`${API_BASE}/api/media/upload`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Upload failed: ${response.status} - ${errorText}`);
   }
 
   return await response.json();
@@ -241,6 +287,31 @@ export function getTools(authToken?: string) {
           { imageUrl: params.imageUrl }
         );
         return { success: true, data: result };
+      },
+    }),
+
+    uploadAnimeImageFromFile: tool({
+      description: 'Upload anime cover image from a base64-encoded file (used by chat interface). The image is uploaded to ImageKit and set as the anime cover.',
+      inputSchema: UploadAnimeImageFromFileSchema,
+      execute: async (params: any, options) => {
+        // Upload the base64 image
+        const uploadResult = await uploadBase64Image(
+          params.imageBase64,
+          params.fileName || 'anime-cover.jpg',
+          'anime',
+          params.animeId,
+          authToken
+        );
+
+        // Update the anime record with the new image
+        await callNestAPI(
+          `/api/admin/animes/${params.animeId}`,
+          'PUT',
+          authToken,
+          { image: uploadResult.filename }
+        );
+
+        return { success: true, data: uploadResult };
       },
     }),
 
@@ -583,6 +654,31 @@ export function getTools(authToken?: string) {
           { imageUrl: params.imageUrl }
         );
         return { success: true, data: result };
+      },
+    }),
+
+    uploadMangaImageFromFile: tool({
+      description: 'Upload manga cover image from a base64-encoded file (used by chat interface). The image is uploaded to ImageKit and set as the manga cover.',
+      inputSchema: UploadMangaImageFromFileSchema,
+      execute: async (params: any, options) => {
+        // Upload the base64 image
+        const uploadResult = await uploadBase64Image(
+          params.imageBase64,
+          params.fileName || 'manga-cover.jpg',
+          'manga',
+          params.mangaId,
+          authToken
+        );
+
+        // Update the manga record with the new image
+        await callNestAPI(
+          `/api/admin/mangas/${params.mangaId}`,
+          'PUT',
+          authToken,
+          { image: uploadResult.filename }
+        );
+
+        return { success: true, data: uploadResult };
       },
     }),
 

@@ -213,6 +213,16 @@ export const UpdateAnimeImageUrlSchema = z.object({
   imageUrl: z.string().url().describe('URL of the image to download and upload'),
 });
 
+/**
+ * Schema for uploading anime image from base64 (chat upload)
+ * Maps to POST /api/media/upload
+ */
+export const UploadAnimeImageFromFileSchema = z.object({
+  animeId: z.number().int().min(1).describe('Anime ID to upload image for'),
+  imageBase64: z.string().min(1).describe('Base64 encoded image data (without data:image prefix)'),
+  fileName: z.string().optional().describe('Original filename'),
+});
+
 // ========================================
 // MANGA SCHEMAS
 // ========================================
@@ -365,6 +375,16 @@ export const UpdateMangaImageUrlSchema = z.object({
 });
 
 /**
+ * Schema for uploading manga image from base64 (chat upload)
+ * Maps to POST /api/media/upload
+ */
+export const UploadMangaImageFromFileSchema = z.object({
+  mangaId: z.number().int().min(1).describe('Manga ID to upload image for'),
+  imageBase64: z.string().min(1).describe('Base64 encoded image data (without data:image prefix)'),
+  fileName: z.string().optional().describe('Original filename'),
+});
+
+/**
  * Schema for searching Google Books for manga
  * Maps to GET /api/mangas/googlebooks/month/:year/:month
  */
@@ -441,6 +461,7 @@ export type BatchUpdateImagesJikanParams = z.infer<typeof BatchUpdateImagesJikan
 export type AutoUpdateAnimeImageParams = z.infer<typeof AutoUpdateAnimeImageSchema>;
 export type UpdateAnimeImageJikanParams = z.infer<typeof UpdateAnimeImageJikanSchema>;
 export type UpdateAnimeImageUrlParams = z.infer<typeof UpdateAnimeImageUrlSchema>;
+export type UploadAnimeImageFromFileParams = z.infer<typeof UploadAnimeImageFromFileSchema>;
 
 // Manga type exports
 export type MangaListParams = z.infer<typeof MangaListSchema>;
@@ -456,6 +477,7 @@ export type BatchUpdateMangaImagesJikanParams = z.infer<typeof BatchUpdateMangaI
 export type AutoUpdateMangaImageParams = z.infer<typeof AutoUpdateMangaImageSchema>;
 export type UpdateMangaImageJikanParams = z.infer<typeof UpdateMangaImageJikanSchema>;
 export type UpdateMangaImageUrlParams = z.infer<typeof UpdateMangaImageUrlSchema>;
+export type UploadMangaImageFromFileParams = z.infer<typeof UploadMangaImageFromFileSchema>;
 export type SearchGoogleBooksMangaParams = z.infer<typeof SearchGoogleBooksMangaSchema>;
 export type SearchBooknodeMangaParams = z.infer<typeof SearchBooknodeMangaSchema>;
 export type SearchJikanMangaParams = z.infer<typeof SearchJikanMangaSchema>;

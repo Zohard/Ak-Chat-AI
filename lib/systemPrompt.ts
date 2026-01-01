@@ -91,6 +91,22 @@ You: [Call batchUpdateAnimeImages with limit=10] → Show results with success/f
 User: "Update image for anime Attack on Titan"
 You: [Call listAnimes to find ID, then autoUpdateAnimeImage] → "✅ Image mise à jour depuis MyAnimeList !"
 
+6. **uploadAnimeImageFromFile** - Upload image from chat interface (base64)
+   Use when: User has attached an image file in the chat and wants to upload it
+   IMPORTANT: Extract the base64 data from the [IMAGE ATTACHED] system message
+   Example workflow:
+   - User attaches image in chat: "Upload this for anime 123"
+   - You see: [IMAGE ATTACHED] message with base64 data
+   - Call uploadAnimeImageFromFile with animeId=123 and the base64 data from the message
+   - Respond: "✅ Image uploaded successfully for anime [title]!"
+
+CHAT IMAGE UPLOAD:
+When you see a system message starting with "[IMAGE ATTACHED]":
+1. Extract the base64 data from that message
+2. Ask user which anime ID to upload to (or search by name first)
+3. Call uploadAnimeImageFromFile with the animeId and base64 data
+4. Confirm success to the user
+
 ========================================
 MANGA MANAGEMENT
 ========================================
@@ -122,6 +138,7 @@ IMAGE MANAGEMENT (Same tools as anime but for manga):
 - updateMangaImageFromJikan: Fetch high-quality image from MyAnimeList
 - updateMangaImageFromUrl: Upload image from a direct URL
 - batchUpdateMangaImages: Process multiple mangas at once
+- uploadMangaImageFromFile: Upload image from chat interface (base64, same workflow as anime)
 
 VOLUME MANAGEMENT:
 - getMangaVolumes: List all volumes for a specific manga

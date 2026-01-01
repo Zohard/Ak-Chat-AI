@@ -44,7 +44,7 @@ export async function OPTIONS(request: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json();
+    const { messages, image } = await req.json();
     const authToken = req.headers.get('authorization')?.replace('Bearer ', '');
 
     if (!authToken) {
@@ -52,6 +52,21 @@ export async function POST(req: Request) {
     }
 
     const userId = req.headers.get('x-user-id') || 'anonymous';
+
+    // If an image is attached, add it to the last user message
+    let processedMessages = messages;
+    if (image && image.base64) {
+      // Store image data in a way the AI can access it
+      // We'll append a system message with the image info
+      processedMessages = [
+        ...messages,
+        {
+          role: 'system',
+          content: `[IMAGE ATTACHED] A user has uploaded an image file: ${image.name} (${image.type}). The base64 data is available for use with uploadAnimeImageFromFile or uploadMangaImageFromFile tools. Base64 data: ${image.base64}`,
+        },
+      ];
+      console.log('[Chat] Image attached:', image.name, image.type, 'Size:', image.base64.length);
+    }
 
     const rateLimitResult = await checkRateLimit(userId);
     const rateLimitHeaders = getRateLimitHeaders(
@@ -84,8 +99,8 @@ export async function POST(req: Request) {
     const model = google('gemini-2.5-flash');
     const tools = getTools(authToken);
 
-    console.log('[Chat] Processing request with', messages.length, 'messages');
-    console.log('[Chat] Last user message:', messages[messages.length - 1]?.content?.substring(0, 100));
+    console.log('[Chat] Processing request with', processedMessages.length, 'messages');
+    console.log('[Chat] Last user message:', processedMessages[processedMessages.length - 1]?.content?.substring(0, 100));
 
     // Stream the AI response with tool support
     // CRITICAL: stopWhen controls how many steps are allowed
@@ -93,7 +108,7 @@ export async function POST(req: Request) {
     const result = streamText({
       model,
       system: SYSTEM_PROMPT,
-      messages,
+      messages: processedMessages,
       tools,
       temperature: 0.7,
       stopWhen: stepCountIs(5), // Allow up to 5 steps: tool calls + text generation
