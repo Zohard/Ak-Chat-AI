@@ -325,6 +325,46 @@ export function formatAniListSeasonalResponse(data: any): string {
 /**
  * Format generic success message
  */
+/**
+ * Format animes without image response
+ */
+export function formatAnimesWithoutImageResponse(data: ApiResponse): string {
+    if (!data.data?.animes || !Array.isArray(data.data.animes)) {
+        return '❌ Aucun anime trouvé ou structure de données invalide.';
+    }
+
+    const animes = data.data.animes;
+    const pagination = data.data.pagination || {};
+
+    if (animes.length === 0) {
+        return '✅ Aucun anime sans image trouvé. Tous les animes ont une image de couverture!';
+    }
+
+    const statusEmojis: Record<number, string> = {
+        0: '🔴', // Bloquée
+        1: '✅', // Affichée
+        2: '⏳'  // En attente
+    };
+
+    let output = `📸 **Animes sans image** (${pagination.total || animes.length} total${pagination.totalPages > 1 ? `, page ${pagination.page}/${pagination.totalPages}` : ''})\n\n`;
+
+    animes.forEach((anime: any, index: number) => {
+        const statusEmoji = statusEmojis[anime.statut] || '⚪';
+        const titre = anime.titre || anime.titre_orig || anime.titre_fr || 'Sans titre';
+        const annee = anime.annee ? ` (${anime.annee})` : '';
+        const format = anime.format ? ` - ${anime.format}` : '';
+
+        output += `${index + 1}. ${statusEmoji} **${titre}**${annee}${format}\n`;
+        output += `   ID: ${anime.id}\n\n`;
+    });
+
+    if (pagination.totalPages > 1 && pagination.page < pagination.totalPages) {
+        output += `\n_Pour voir la page suivante, utilisez : page ${pagination.page + 1}_`;
+    }
+
+    return output;
+}
+
 export function formatSuccessMessage(message: string, details?: Record<string, any>): string {
     let response = `✅ ${message}\n`;
 
@@ -360,7 +400,10 @@ export function ensureUserFriendlyResponse(response: string): string {
         const data: ApiResponse = JSON.parse(response);
 
         // Route to appropriate formatter based on data structure
-        if (data.data?.items && Array.isArray(data.data.items)) {
+        if (data.data?.animes && Array.isArray(data.data.animes) && data.data?.pagination) {
+            // Animes without image response (has pagination object)
+            return formatAnimesWithoutImageResponse(data);
+        } else if (data.data?.items && Array.isArray(data.data.items)) {
             // Check if it's manga or anime based on field names
             if (data.data.items.length > 0 && data.data.items[0]?.idManga) {
                 // Manga list response
