@@ -227,7 +227,7 @@ location /api/chat {
 **Cover Images:**
 - Main poster/cover for the anime
 - Stored in `anime.image` field (just the filename)
-- Uploaded to ImageKit: `images/animes/{filename}`
+- Uploaded to R2: `images/animes/{filename}`
 - One per anime
 - Example: `attack-on-titan-1702345678.jpg`
 
@@ -237,7 +237,7 @@ location /api/chat {
   - `type = 1` (anime) or `type = 2` (manga)
   - `url_screen = screenshots/{filename}.ext`
   - `id_titre` = anime ID
-- Uploaded to ImageKit: `images/animes/screenshots/{filename}`
+- Uploaded to R2: `images/animes/screenshots/{filename}`
 - Multiple per anime
 - Example: `screenshots/demon-slayer-scene-1702345679.jpg`
 
@@ -247,10 +247,10 @@ location /api/chat {
 2. **AI calls uploadCoverImage or uploadScreenshot** with anime ID and URL
 3. **NestJS backend**:
    - Downloads image from URL
-   - Uploads to ImageKit CDN
+   - Uploads to Cloudflare R2
    - Generates safe filename (e.g., `anime-title-timestamp.jpg`)
    - Saves to database
-4. **Images served via ImageKit** at `https://ik.imagekit.io/akimages/`
+4. **Images served via Cloudflare R2** at `https://pub-b37473d0af014d50941768d98a9ec79d.r2.dev/`
 
 ### Example AI Prompts
 

@@ -2,12 +2,12 @@
 
 ## Overview
 
-The AI assistant can now upload images and screenshots for anime entries from external URLs using ImageKit CDN.
+The AI assistant can now upload images and screenshots for anime entries from external URLs using Cloudflare R2.
 
 ## Architecture
 
 ```
-User → AI Assistant → Next.js Orchestrator → NestJS API → ImageKit CDN
+User → AI Assistant → Next.js Orchestrator → NestJS API → Cloudflare R2
                                                 ↓
                                            PostgreSQL Database
 ```
@@ -23,10 +23,10 @@ User → AI Assistant → Next.js Orchestrator → NestJS API → ImageKit CDN
 - Field: `image` (VARCHAR)
 - Value: Just the filename (e.g., `attack-on-titan-1702345678.jpg`)
 
-**ImageKit Storage:**
+**R2 Storage:**
 - Folder: `images/animes/`
 - Full path: `images/animes/attack-on-titan-1702345678.jpg`
-- Public URL: `https://ik.imagekit.io/akimages/images/animes/attack-on-titan-1702345678.jpg`
+- Public URL: `https://pub-b37473d0af014d50941768d98a9ec79d.r2.dev/images/animes/attack-on-titan-1702345678.jpg`
 
 **AI Tool:** `uploadCoverImage`
 ```typescript
@@ -38,9 +38,9 @@ uploadCoverImage({
 
 **What it does:**
 1. Downloads image from URL
-2. Uploads to ImageKit: `images/animes/`
+2. Uploads to R2: `images/animes/`
 3. Updates `ak_animes.image` with filename
-4. Returns ImageKit URL
+4. Returns R2 URL
 
 ### 2. Screenshots
 
@@ -55,10 +55,10 @@ uploadCoverImage({
   - `type` (INTEGER) - **1 = anime, 2 = manga**
   - `upload_date` (TIMESTAMP)
 
-**ImageKit Storage:**
+**R2 Storage:**
 - Folder: `images/animes/screenshots/`
 - Full path: `images/animes/screenshots/demon-slayer-scene-1702345679.jpg`
-- Public URL: `https://ik.imagekit.io/akimages/images/animes/screenshots/demon-slayer-scene-1702345679.jpg`
+- Public URL: `https://pub-b37473d0af014d50941768d98a9ec79d.r2.dev/images/animes/screenshots/demon-slayer-scene-1702345679.jpg`
 
 **AI Tool:** `uploadScreenshot`
 ```typescript
@@ -70,13 +70,13 @@ uploadScreenshot({
 
 **What it does:**
 1. Downloads image from URL
-2. Uploads to ImageKit: `images/animes/screenshots/`
+2. Uploads to R2: `images/animes/screenshots/`
 3. Inserts record into `ak_screenshots` with:
    - `url_screen` = `screenshots/{filename}.ext`
    - `id_titre` = anime ID
    - `type` = 1 (anime)
    - `upload_date` = NOW()
-4. Returns screenshot ID and ImageKit URL
+4. Returns screenshot ID and R2 URL
 
 ## Important Details
 
@@ -88,7 +88,7 @@ screenshots/{filename}.ext
 ```
 
 **Example:**
-- ImageKit full path: `images/animes/screenshots/one-piece-scene-1702345680.jpg`
+- R2 full path: `images/animes/screenshots/one-piece-scene-1702345680.jpg`
 - Database `url_screen`: `screenshots/one-piece-scene-1702345680.jpg`
 
 ### Type Codes
@@ -132,7 +132,7 @@ Content-Type: application/json
 ```json
 {
   "filename": "attack-on-titan-1702345678.jpg",
-  "url": "https://ik.imagekit.io/akimages/images/animes/attack-on-titan-1702345678.jpg",
+  "url": "https://pub-b37473d0af014d50941768d98a9ec79d.r2.dev/images/animes/attack-on-titan-1702345678.jpg",
   "imagekitFileId": "abc123",
   "size": 123456
 }
@@ -143,7 +143,7 @@ For screenshots (`saveAsScreenshot: true`):
 {
   "id": 789,  // screenshot ID from ak_screenshots
   "filename": "attack-on-titan-1702345678.jpg",
-  "url": "https://ik.imagekit.io/akimages/images/animes/screenshots/attack-on-titan-1702345678.jpg",
+  "url": "https://pub-b37473d0af014d50941768d98a9ec79d.r2.dev/images/animes/screenshots/attack-on-titan-1702345678.jpg",
   "relatedId": 123,
   "imagekitFileId": "abc123"
 }
@@ -214,7 +214,7 @@ The backend automatically processes images using Sharp:
    - Converts to WebP for better compression (quality: 85%)
    - Maintains aspect ratio
 
-3. **Upload to ImageKit**
+3. **Upload to R2**
    - Deletes existing file with same name (if any)
    - Uploads to appropriate folder
    - Returns CDN URL
@@ -237,14 +237,14 @@ The backend automatically processes images using Sharp:
    - Timeout (30 seconds)
    - Invalid content type
 
-2. **ImageKit Upload Failed**
+2. **R2 Upload Failed**
    - Network issues
    - Invalid API credentials
    - Quota exceeded
 
 3. **Database Save Failed**
    - Invalid anime ID (foreign key violation)
-   - Orphaned ImageKit files are auto-deleted
+   - Orphaned R2 files are auto-deleted
 
 **Error Response:**
 ```json
@@ -329,9 +329,9 @@ Make sure the URL is provided and is a valid HTTP(S) URL.
 - Check if you have admin permissions
 - Ensure database connection is active
 
-### "ImageKit upload failed"
+### "R2 upload failed"
 - Check `IMAGEKIT_PRIVATE_KEY` in `.env`
-- Verify ImageKit quota not exceeded
+- Verify R2 quota not exceeded
 - Check network connectivity
 
 ## Future Enhancements

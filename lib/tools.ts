@@ -277,7 +277,7 @@ export function getTools(authToken?: string) {
     }),
 
     updateAnimeImageFromUrl: tool({
-      description: 'Update anime cover image from a direct image URL. Downloads the image and uploads to ImageKit.',
+      description: 'Update anime cover image from a direct image URL. Downloads the image and uploads to R2.',
       inputSchema: UpdateAnimeImageUrlSchema,
       execute: async (params: any, options) => {
         const result = await callNestAPI(
@@ -291,7 +291,7 @@ export function getTools(authToken?: string) {
     }),
 
     uploadAnimeImageFromFile: tool({
-      description: 'Upload anime cover image from a base64-encoded file (used by chat interface). The image is uploaded to ImageKit and set as the anime cover.',
+      description: 'Upload anime cover image from a base64-encoded file (used by chat interface). The image is uploaded to R2 and set as the anime cover.',
       inputSchema: UploadAnimeImageFromFileSchema,
       execute: async (params: any, options) => {
         // Upload the base64 image
@@ -554,7 +554,7 @@ export function getTools(authToken?: string) {
     }),
 
     uploadMangaCoverImage: tool({
-      description: 'Upload cover image for manga from URL. Downloads the image and uploads to ImageKit, then sets it as manga cover.',
+      description: 'Upload cover image for manga from URL. Downloads the image and uploads to R2, then sets it as manga cover.',
       inputSchema: UploadMangaCoverImageSchema,
       execute: async (params: any, options) => {
         const uploadResult = await callNestAPI(
@@ -644,7 +644,7 @@ export function getTools(authToken?: string) {
     }),
 
     updateMangaImageFromUrl: tool({
-      description: 'Update manga cover image from a direct image URL. Downloads the image and uploads to ImageKit.',
+      description: 'Update manga cover image from a direct image URL. Downloads the image and uploads to R2.',
       inputSchema: UpdateMangaImageUrlSchema,
       execute: async (params: any, options) => {
         const result = await callNestAPI(
@@ -658,7 +658,7 @@ export function getTools(authToken?: string) {
     }),
 
     uploadMangaImageFromFile: tool({
-      description: 'Upload manga cover image from a base64-encoded file (used by chat interface). The image is uploaded to ImageKit and set as the manga cover.',
+      description: 'Upload manga cover image from a base64-encoded file (used by chat interface). The image is uploaded to R2 and set as the manga cover.',
       inputSchema: UploadMangaImageFromFileSchema,
       execute: async (params: any, options) => {
         // Upload the base64 image
