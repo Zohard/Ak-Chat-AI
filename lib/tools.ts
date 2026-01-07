@@ -43,6 +43,20 @@ import {
   LookupMangaByIsbnSchema,
   GetMangaVolumesSchema,
   CreateMangaVolumeSchema,
+  // Business schemas
+  BusinessListSchema,
+  CreateBusinessSchema,
+  UpdateBusinessSchema,
+  UpdateBusinessStatusSchema,
+  GetBusinessSchema,
+  DeleteBusinessSchema,
+  GetAnimeStaffSchema,
+  AddAnimeBusinessSchema,
+  RemoveAnimeBusinessSchema,
+  GetMangaStaffSchema,
+  AddMangaBusinessSchema,
+  RemoveMangaBusinessSchema,
+  ImportBusinessImageSchema,
 } from './schemas';
 
 const API_BASE = process.env.NESTJS_API_BASE || 'http://localhost:3002';
@@ -704,6 +718,137 @@ export function getTools(authToken?: string) {
           'POST',
           authToken,
           { isbn: params.isbn }
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    // ========================================
+    // BUSINESS TOOLS (Studios, Publishers, etc.)
+    // ========================================
+
+    listBusinesses: tool({
+      description: 'Search and list businesses (studios, publishers, production companies, distributors, etc.) from the database. Use filters for type and status.',
+      inputSchema: BusinessListSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI('/api/admin/business', 'GET', authToken, params);
+        return { success: true, data: result };
+      },
+    }),
+
+    getBusiness: tool({
+      description: 'Get detailed information about a specific business by ID.',
+      inputSchema: GetBusinessSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(`/api/admin/business/${params.id}`, 'GET', authToken);
+        return { success: true, data: result };
+      },
+    }),
+
+    createBusiness: tool({
+      description: 'Create a new business entry (studio, publisher, production company, etc.). Use this to add companies that are involved in anime/manga production or distribution.',
+      inputSchema: CreateBusinessSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI('/api/admin/business', 'POST', authToken, params);
+        return { success: true, data: result };
+      },
+    }),
+
+    updateBusiness: tool({
+      description: 'Update business information (name, type, country, website, etc.). Use listBusinesses first to find the correct ID if searching by name.',
+      inputSchema: UpdateBusinessSchema,
+      execute: async (params: any, options) => {
+        const { id, ...updateData } = params;
+        const result = await callNestAPI(
+          `/api/admin/business/${id}`,
+          'PUT',
+          authToken,
+          updateData
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    updateBusinessStatus: tool({
+      description: 'Update business status (0=hidden, 1=published)',
+      inputSchema: UpdateBusinessStatusSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/admin/business/${params.id}/status`,
+          'PUT',
+          authToken,
+          { statut: params.statut }
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    deleteBusiness: tool({
+      description: 'Delete a business entry (destructive action)',
+      inputSchema: DeleteBusinessSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/admin/business/${params.id}`,
+          'DELETE',
+          authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    importBusinessImage: tool({
+      description: 'Import business logo/image from external URL to ImageKit. Provide the image URL and business name.',
+      inputSchema: ImportBusinessImageSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          '/api/admin/business/import-image',
+          'POST',
+          authToken,
+          params
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    getAnimeStaff: tool({
+      description: 'Get all staff/businesses associated with an anime (studios, producers, distributors, etc.). Returns complete information about each business and their role.',
+      inputSchema: GetAnimeStaffSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/animes/${params.animeId}/staff`,
+          'GET',
+          authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    addAnimeBusiness: tool({
+      description: 'Add a business to an anime with a specific role (studio, producteur, diffuseur, distributeur, etc.). Use listBusinesses to find the business ID first.',
+      inputSchema: AddAnimeBusinessSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/animes/${params.animeId}/businesses`,
+          'POST',
+          authToken,
+          {
+            businessId: params.businessId,
+            type: params.type,
+            precisions: params.precisions,
+          }
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    removeAnimeBusiness: tool({
+      description: 'Remove a business from an anime',
+      inputSchema: RemoveAnimeBusinessSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/animes/${params.animeId}/businesses/${params.businessId}`,
+          'DELETE',
+          authToken
         );
         return { success: true, data: result };
       },

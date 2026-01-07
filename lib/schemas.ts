@@ -438,6 +438,146 @@ export const CreateMangaVolumeSchema = z.object({
   isbn: z.string().min(10).describe('ISBN barcode of volume'),
 });
 
+// ========================================
+// BUSINESS SCHEMAS (Studios, Publishers, etc.)
+// ========================================
+
+/**
+ * Schema for listing/searching businesses (studios, publishers, etc.)
+ * Maps to GET /api/admin/business
+ */
+export const BusinessListSchema = z.object({
+  page: z.number().int().min(1).default(1).describe('Page number for pagination'),
+  statut: z.number().int().min(0).max(1).optional().describe('Filter by status: 0=hidden, 1=published'),
+  search: z.string().optional().describe('Search query for business name'),
+  type: z.string().optional().describe('Filter by type (e.g., "studio", "éditeur", "diffuseur")'),
+});
+
+/**
+ * Schema for creating a new business entry
+ * Maps to POST /api/admin/business
+ */
+export const CreateBusinessSchema = z.object({
+  denomination: z.string().min(1, 'Denomination is required').describe('Business name (e.g., Studio Ghibli, Toei Animation)'),
+  niceUrl: z.string().optional().describe('URL-friendly slug'),
+  type: z.string().optional().describe('Type: studio, éditeur, diffuseur, producteur, etc.'),
+  autresDenominations: z.string().optional().describe('Alternative names, comma separated'),
+  image: z.string().optional().describe('Logo/image filename'),
+  date: z.string().optional().describe('Founding date (free text)'),
+  origine: z.string().optional().describe('Country of origin (e.g., Japon, France, USA)'),
+  siteOfficiel: z.string().url().optional().describe('Official website URL'),
+  notes: z.string().optional().describe('Additional notes'),
+  statut: z.number().int().min(0).max(1).default(1).describe('Status: 0=hidden, 1=published'),
+});
+
+/**
+ * Schema for updating business information
+ * Maps to PUT /api/admin/business/:id
+ */
+export const UpdateBusinessSchema = z.object({
+  id: z.number().int().min(1).describe('Business ID to update'),
+  denomination: z.string().optional().describe('Business name'),
+  niceUrl: z.string().optional().describe('URL-friendly slug'),
+  type: z.string().optional().describe('Type'),
+  autresDenominations: z.string().optional().describe('Alternative names'),
+  image: z.string().optional().describe('Logo/image filename'),
+  date: z.string().optional().describe('Founding date'),
+  origine: z.string().optional().describe('Country of origin'),
+  siteOfficiel: z.string().optional().describe('Official website URL'),
+  notes: z.string().optional().describe('Additional notes'),
+  statut: z.number().int().min(0).max(1).optional().describe('Status'),
+});
+
+/**
+ * Schema for updating business status
+ * Maps to PUT /api/admin/business/:id/status
+ */
+export const UpdateBusinessStatusSchema = z.object({
+  id: z.number().int().min(1).describe('Business ID to update'),
+  statut: z.number().int().min(0).max(1).describe('New status: 0=hidden, 1=published'),
+});
+
+/**
+ * Schema for getting business details
+ * Maps to GET /api/admin/business/:id
+ */
+export const GetBusinessSchema = z.object({
+  id: z.number().int().min(1).describe('Business ID'),
+});
+
+/**
+ * Schema for deleting a business
+ * Maps to DELETE /api/admin/business/:id
+ */
+export const DeleteBusinessSchema = z.object({
+  id: z.number().int().min(1).describe('Business ID to delete'),
+});
+
+/**
+ * Schema for getting anime staff/businesses
+ * Maps to GET /api/animes/:id/staff
+ */
+export const GetAnimeStaffSchema = z.object({
+  animeId: z.number().int().min(1).describe('Anime ID'),
+});
+
+/**
+ * Schema for adding business to anime
+ * Maps to POST /api/animes/:id/businesses
+ */
+export const AddAnimeBusinessSchema = z.object({
+  animeId: z.number().int().min(1).describe('Anime ID'),
+  businessId: z.number().int().min(1).describe('Business ID to associate'),
+  type: z.string().min(1).describe('Relation type: studio, producteur, diffuseur, distributeur, etc.'),
+  precisions: z.string().optional().describe('Additional details about the relationship'),
+});
+
+/**
+ * Schema for removing business from anime
+ * Maps to DELETE /api/animes/:id/businesses/:businessId
+ */
+export const RemoveAnimeBusinessSchema = z.object({
+  animeId: z.number().int().min(1).describe('Anime ID'),
+  businessId: z.number().int().min(1).describe('Business ID to remove'),
+});
+
+/**
+ * Schema for getting manga staff/businesses
+ * Maps to GET /api/mangas/:id/staff (if available)
+ */
+export const GetMangaStaffSchema = z.object({
+  mangaId: z.number().int().min(1).describe('Manga ID'),
+});
+
+/**
+ * Schema for adding business to manga
+ * Maps to POST /api/mangas/:id/businesses (if available)
+ */
+export const AddMangaBusinessSchema = z.object({
+  mangaId: z.number().int().min(1).describe('Manga ID'),
+  businessId: z.number().int().min(1).describe('Business ID to associate'),
+  type: z.string().min(1).describe('Relation type: éditeur, distributeur, etc.'),
+  precisions: z.string().optional().describe('Additional details about the relationship'),
+});
+
+/**
+ * Schema for removing business from manga
+ * Maps to DELETE /api/mangas/:id/businesses/:businessId (if available)
+ */
+export const RemoveMangaBusinessSchema = z.object({
+  mangaId: z.number().int().min(1).describe('Manga ID'),
+  businessId: z.number().int().min(1).describe('Business ID to remove'),
+});
+
+/**
+ * Schema for importing business image
+ * Maps to POST /api/admin/business/import-image
+ */
+export const ImportBusinessImageSchema = z.object({
+  imageUrl: z.string().url().describe('URL of the image to import'),
+  businessName: z.string().min(1).describe('Name of the business for filename generation'),
+});
+
 /**
  * Type exports for TypeScript
  */
@@ -484,3 +624,18 @@ export type SearchJikanMangaParams = z.infer<typeof SearchJikanMangaSchema>;
 export type LookupMangaByIsbnParams = z.infer<typeof LookupMangaByIsbnSchema>;
 export type GetMangaVolumesParams = z.infer<typeof GetMangaVolumesSchema>;
 export type CreateMangaVolumeParams = z.infer<typeof CreateMangaVolumeSchema>;
+
+// Business type exports
+export type BusinessListParams = z.infer<typeof BusinessListSchema>;
+export type CreateBusinessParams = z.infer<typeof CreateBusinessSchema>;
+export type UpdateBusinessParams = z.infer<typeof UpdateBusinessSchema>;
+export type UpdateBusinessStatusParams = z.infer<typeof UpdateBusinessStatusSchema>;
+export type GetBusinessParams = z.infer<typeof GetBusinessSchema>;
+export type DeleteBusinessParams = z.infer<typeof DeleteBusinessSchema>;
+export type GetAnimeStaffParams = z.infer<typeof GetAnimeStaffSchema>;
+export type AddAnimeBusinessParams = z.infer<typeof AddAnimeBusinessSchema>;
+export type RemoveAnimeBusinessParams = z.infer<typeof RemoveAnimeBusinessSchema>;
+export type GetMangaStaffParams = z.infer<typeof GetMangaStaffSchema>;
+export type AddMangaBusinessParams = z.infer<typeof AddMangaBusinessSchema>;
+export type RemoveMangaBusinessParams = z.infer<typeof RemoveMangaBusinessSchema>;
+export type ImportBusinessImageParams = z.infer<typeof ImportBusinessImageSchema>;

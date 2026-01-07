@@ -118,6 +118,15 @@ Show me all pending animes
 Approve anime ID 123
 ```
 
+**Manage businesses (studios, publishers):**
+```
+Find studio Toei Animation
+Show me all studios
+Add studio MAPPA from Japan
+Who produced Attack on Titan?
+Add MAPPA as studio for Jujutsu Kaisen
+```
+
 **Filter by year:**
 ```
 Show me animes from 2023
@@ -167,6 +176,20 @@ The AI has access to these tools:
 | `addAnimeToSeason` | Add anime to season | `POST /api/admin/seasons/:id/animes` |
 | `removeAnimeFromSeason` | Remove anime from season | `DELETE /api/admin/seasons/:id/animes/:animeId` |
 | `deleteSeason` | Delete season | `DELETE /api/admin/seasons/:id` |
+
+### Business Management (Studios, Publishers, etc.)
+| Tool | Description | Endpoint |
+|------|-------------|----------|
+| `listBusinesses` | Search/filter businesses | `GET /api/admin/business` |
+| `getBusiness` | Get business details | `GET /api/admin/business/:id` |
+| `createBusiness` | Create new business (studio, publisher, etc.) | `POST /api/admin/business` |
+| `updateBusiness` | Update business information | `PUT /api/admin/business/:id` |
+| `updateBusinessStatus` | Update status (0=hidden, 1=published) | `PUT /api/admin/business/:id/status` |
+| `deleteBusiness` | Delete business | `DELETE /api/admin/business/:id` |
+| `importBusinessImage` | Import business logo from URL | `POST /api/admin/business/import-image` |
+| `getAnimeStaff` | Get anime staff/businesses | `GET /api/animes/:id/staff` |
+| `addAnimeBusiness` | Add business to anime | `POST /api/animes/:id/businesses` |
+| `removeAnimeBusiness` | Remove business from anime | `DELETE /api/animes/:id/businesses/:businessId` |
 
 ## Rate Limiting
 
