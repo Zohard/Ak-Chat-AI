@@ -578,6 +578,46 @@ export const ImportBusinessImageSchema = z.object({
   businessName: z.string().min(1).describe('Name of the business for filename generation'),
 });
 
+// ========================================
+// ANILIST IMPORT SCHEMAS
+// ========================================
+
+/**
+ * Schema for previewing AniList data stored in commentaire field
+ * Maps to GET /api/admin/animes/:id/anilist-data
+ */
+export const GetAniListDataPreviewSchema = z.object({
+  animeId: z.number().int().min(1).describe('Anime ID to preview AniList data for'),
+});
+
+/**
+ * Schema for importing tags from AniList data
+ * Maps to POST /api/admin/animes/:id/import-tags
+ */
+export const ImportAniListTagsSchema = z.object({
+  animeId: z.number().int().min(1).describe('Anime ID to import tags for'),
+});
+
+/**
+ * Schema for importing staff from AniList data
+ * Maps to POST /api/admin/animes/:id/import-staff
+ */
+export const ImportAniListStaffSchema = z.object({
+  animeId: z.number().int().min(1).describe('Anime ID to import staff for'),
+  includeVoiceActors: z.boolean().default(false).describe('Include Japanese voice actors in import'),
+  roles: z.array(z.string()).optional().describe('Filter by specific roles (e.g., ["director", "music", "character design"])'),
+});
+
+/**
+ * Schema for importing both tags and staff from AniList data
+ * Maps to POST /api/admin/animes/:id/import-anilist
+ */
+export const ImportAniListAllSchema = z.object({
+  animeId: z.number().int().min(1).describe('Anime ID to import AniList data for'),
+  includeVoiceActors: z.boolean().default(false).describe('Include Japanese voice actors in staff import'),
+  staffRoles: z.array(z.string()).optional().describe('Filter staff by specific roles'),
+});
+
 /**
  * Type exports for TypeScript
  */
@@ -639,3 +679,9 @@ export type GetMangaStaffParams = z.infer<typeof GetMangaStaffSchema>;
 export type AddMangaBusinessParams = z.infer<typeof AddMangaBusinessSchema>;
 export type RemoveMangaBusinessParams = z.infer<typeof RemoveMangaBusinessSchema>;
 export type ImportBusinessImageParams = z.infer<typeof ImportBusinessImageSchema>;
+
+// AniList import type exports
+export type GetAniListDataPreviewParams = z.infer<typeof GetAniListDataPreviewSchema>;
+export type ImportAniListTagsParams = z.infer<typeof ImportAniListTagsSchema>;
+export type ImportAniListStaffParams = z.infer<typeof ImportAniListStaffSchema>;
+export type ImportAniListAllParams = z.infer<typeof ImportAniListAllSchema>;

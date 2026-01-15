@@ -57,6 +57,11 @@ import {
   AddMangaBusinessSchema,
   RemoveMangaBusinessSchema,
   ImportBusinessImageSchema,
+  // AniList import schemas
+  GetAniListDataPreviewSchema,
+  ImportAniListTagsSchema,
+  ImportAniListStaffSchema,
+  ImportAniListAllSchema,
 } from './schemas';
 
 const API_BASE = process.env.NESTJS_API_BASE || 'http://localhost:3002';
@@ -849,6 +854,66 @@ export function getTools(authToken?: string) {
           `/api/animes/${params.animeId}/businesses/${params.businessId}`,
           'DELETE',
           authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    // ========================================
+    // ANILIST IMPORT TOOLS
+    // ========================================
+
+    getAniListDataPreview: tool({
+      description: 'Preview AniList data stored in an anime\'s commentaire field. Shows available genres, staff, and characters that can be imported. Use this before importing to see what data is available.',
+      inputSchema: GetAniListDataPreviewSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/admin/animes/${params.animeId}/anilist-data`,
+          'GET',
+          authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    importAniListTags: tool({
+      description: 'Import tags/genres from AniList data to an anime. Creates tags if they don\'t exist and links them to the anime. The anime must have AniList data stored in its commentaire field (typically from when it was imported from AniList).',
+      inputSchema: ImportAniListTagsSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/admin/animes/${params.animeId}/import-tags`,
+          'POST',
+          authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    importAniListStaff: tool({
+      description: 'Import staff from AniList data to an anime. Creates business entries for staff members and links them to the anime. Can optionally include Japanese voice actors and filter by specific roles (director, music, character design, etc.).',
+      inputSchema: ImportAniListStaffSchema,
+      execute: async (params: any, options) => {
+        const { animeId, ...body } = params;
+        const result = await callNestAPI(
+          `/api/admin/animes/${animeId}/import-staff`,
+          'POST',
+          authToken,
+          body
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    importAniListAll: tool({
+      description: 'Import both tags and staff from AniList data to an anime in one operation. Combines importAniListTags and importAniListStaff functionality. Use getAniListDataPreview first to see what data is available.',
+      inputSchema: ImportAniListAllSchema,
+      execute: async (params: any, options) => {
+        const { animeId, ...body } = params;
+        const result = await callNestAPI(
+          `/api/admin/animes/${animeId}/import-anilist`,
+          'POST',
+          authToken,
+          body
         );
         return { success: true, data: result };
       },
