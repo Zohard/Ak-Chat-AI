@@ -579,6 +579,43 @@ export const ImportBusinessImageSchema = z.object({
 });
 
 // ========================================
+// EPISODE SYNC SCHEMAS
+// ========================================
+
+/**
+ * Schema for syncing anime episodes from AniList
+ * Maps to POST /api/animes/:id/episodes/sync
+ */
+export const SyncAnimeEpisodesSchema = z.object({
+  animeId: z.number().int().min(1).describe('Anime ID to sync episodes for'),
+  force: z.boolean().default(false).describe('Force sync even if episodes already exist'),
+});
+
+/**
+ * Schema for getting anime episodes
+ * Maps to GET /api/animes/:id/episodes
+ */
+export const GetAnimeEpisodesSchema = z.object({
+  animeId: z.number().int().min(1).describe('Anime ID to get episodes for'),
+});
+
+/**
+ * Schema for checking anime sync readiness
+ * Returns info about whether anime has AniList ID and nb_ep
+ */
+export const CheckAnimeSyncReadinessSchema = z.object({
+  animeId: z.number().int().min(1).describe('Anime ID to check'),
+});
+
+/**
+ * Schema for batch syncing episodes for multiple animes
+ */
+export const BatchSyncEpisodesSchema = z.object({
+  animeIds: z.array(z.number().int().min(1)).describe('Array of anime IDs to sync'),
+  force: z.boolean().default(false).describe('Force sync even if episodes already exist'),
+});
+
+// ========================================
 // ANILIST IMPORT SCHEMAS
 // ========================================
 
@@ -685,3 +722,9 @@ export type GetAniListDataPreviewParams = z.infer<typeof GetAniListDataPreviewSc
 export type ImportAniListTagsParams = z.infer<typeof ImportAniListTagsSchema>;
 export type ImportAniListStaffParams = z.infer<typeof ImportAniListStaffSchema>;
 export type ImportAniListAllParams = z.infer<typeof ImportAniListAllSchema>;
+
+// Episode sync type exports
+export type SyncAnimeEpisodesParams = z.infer<typeof SyncAnimeEpisodesSchema>;
+export type GetAnimeEpisodesParams = z.infer<typeof GetAnimeEpisodesSchema>;
+export type CheckAnimeSyncReadinessParams = z.infer<typeof CheckAnimeSyncReadinessSchema>;
+export type BatchSyncEpisodesParams = z.infer<typeof BatchSyncEpisodesSchema>;

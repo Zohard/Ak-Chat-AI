@@ -62,6 +62,11 @@ import {
   ImportAniListTagsSchema,
   ImportAniListStaffSchema,
   ImportAniListAllSchema,
+  // Episode sync schemas
+  SyncAnimeEpisodesSchema,
+  GetAnimeEpisodesSchema,
+  CheckAnimeSyncReadinessSchema,
+  BatchSyncEpisodesSchema,
 } from './schemas';
 
 const API_BASE = process.env.NESTJS_API_BASE || 'http://localhost:3002';
@@ -916,6 +921,189 @@ export function getTools(authToken?: string) {
           body
         );
         return { success: true, data: result };
+      },
+    }),
+
+    // ========================================
+    // EPISODE SYNC TOOLS
+    // ========================================
+
+    syncAnimeEpisodes: tool({
+      description: 'Sync episodes for an anime from AniList (with Jikan/MAL fallback). The anime must have an AniList ID stored either in the commentaire field (JSON with anilistId) or in the sources field (URL like https://anilist.co/anime/12345). If the anime has no AniList ID, you should first use searchAniList to find it and then update the anime sources field with the AniList URL. This will also update nb_ep if it was empty.',
+      inputSchema: SyncAnimeEpisodesSchema,
+      execute: async (params: any, options) => {
+        try {
+          const url = params.force
+            ? `/api/animes/${params.animeId}/episodes/sync?force=true`
+            : `/api/animes/${params.animeId}/episodes/sync`;
+          const result = await callNestAPI(url, 'POST', authToken);
+          return {
+            success: true,
+            episodesAdded: result.length || 0,
+            message: result.length > 0
+              ? `Successfully synced ${result.length} episodes for anime ${params.animeId}`
+              : 'No new episodes to sync (anime may already have episodes or no schedule data available)',
+            data: result
+          };
+        } catch (error: any) {
+          // Check if it's the AniList ID not found error
+          if (error.message?.includes('AniList ID not found')) {
+            return {
+              success: false,
+              needsAniListId: true,
+              message: 'This anime does not have an AniList ID. Please search AniList to find the correct ID and update the anime sources field with the AniList URL (e.g., https://anilist.co/anime/12345).',
+              error: error.message
+            };
+          }
+          throw error;
+        }
+      },
+    }),
+
+    getAnimeEpisodes: tool({
+      description: 'Get all episodes for an anime. Returns the list of episodes with their details (number, title, air date, etc.).',
+      inputSchema: GetAnimeEpisodesSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/animes/${params.animeId}/episodes`,
+          'GET',
+          authToken
+        );
+        return {
+          success: true,
+          episodeCount: result.length || 0,
+          data: result
+        };
+      },
+    }),
+
+    checkAnimeSyncReadiness: tool({
+      description: 'Check if an anime is ready for episode sync. Returns information about whether the anime has an AniList ID (required for sync), current episode count, and nb_ep value. Use this before syncing to know if you need to add AniList ID first.',
+      inputSchema: CheckAnimeSyncReadinessSchema,
+      execute: async (params: any, options) => {
+        // Get anime details
+        const anime = await callNestAPI(
+          `/api/admin/animes?search=&page=1&limit=1`,
+          'GET',
+          authToken
+        );
+
+        // Get specific anime by ID using list endpoint with filter
+        const animeDetail = await callNestAPI(
+          `/api/animes/${params.animeId}`,
+          'GET',
+          authToken
+        );
+
+        // Get current episode count
+        const episodes = await callNestAPI(
+          `/api/animes/${params.animeId}/episodes`,
+          'GET',
+          authToken
+        );
+
+        // Check for AniList ID in commentaire or sources
+        let hasAniListId = false;
+        let aniListId = null;
+
+        if (animeDetail.commentaire) {
+          try {
+            if (animeDetail.commentaire.trim().startsWith('{')) {
+              const data = JSON.parse(animeDetail.commentaire);
+              if (data.anilistId) {
+                hasAniListId = true;
+                aniListId = data.anilistId;
+              }
+            }
+          } catch (e) {
+            // Ignore parse errors
+          }
+        }
+
+        if (!hasAniListId && animeDetail.sources) {
+          const match = animeDetail.sources.match(/anilist\.co\/anime\/(\d+)/);
+          if (match && match[1]) {
+            hasAniListId = true;
+            aniListId = parseInt(match[1]);
+          }
+        }
+
+        return {
+          success: true,
+          animeId: params.animeId,
+          titre: animeDetail.titre,
+          readyForSync: hasAniListId,
+          hasAniListId,
+          aniListId,
+          currentEpisodeCount: episodes.length || 0,
+          nbEp: animeDetail.nbEp,
+          nbEpIsEmpty: !animeDetail.nbEp || animeDetail.nbEp === 0,
+          sources: animeDetail.sources,
+          recommendation: hasAniListId
+            ? (episodes.length > 0
+              ? 'Anime already has episodes. Use force=true to re-sync if needed.'
+              : 'Ready for sync! Call syncAnimeEpisodes to import episodes.')
+            : 'Missing AniList ID. Use searchAniList to find the anime, then updateAnime to set the sources field with the AniList URL (e.g., https://anilist.co/anime/12345).'
+        };
+      },
+    }),
+
+    batchSyncEpisodes: tool({
+      description: 'Batch sync episodes for multiple animes. Processes each anime and returns a summary of results. Useful for syncing all animes in a season.',
+      inputSchema: BatchSyncEpisodesSchema,
+      execute: async (params: any, options) => {
+        const results: any[] = [];
+        let successCount = 0;
+        let failedCount = 0;
+        let totalEpisodes = 0;
+        let needsAniListIdCount = 0;
+
+        for (const animeId of params.animeIds) {
+          try {
+            const url = params.force
+              ? `/api/animes/${animeId}/episodes/sync?force=true`
+              : `/api/animes/${animeId}/episodes/sync`;
+            const result = await callNestAPI(url, 'POST', authToken);
+            const episodeCount = result.length || 0;
+            totalEpisodes += episodeCount;
+            successCount++;
+            results.push({
+              animeId,
+              success: true,
+              episodesAdded: episodeCount
+            });
+          } catch (error: any) {
+            if (error.message?.includes('AniList ID not found')) {
+              needsAniListIdCount++;
+              results.push({
+                animeId,
+                success: false,
+                needsAniListId: true,
+                error: 'Missing AniList ID'
+              });
+            } else {
+              failedCount++;
+              results.push({
+                animeId,
+                success: false,
+                error: error.message
+              });
+            }
+          }
+        }
+
+        return {
+          success: true,
+          summary: {
+            total: params.animeIds.length,
+            successful: successCount,
+            failed: failedCount,
+            needsAniListId: needsAniListIdCount,
+            totalEpisodesAdded: totalEpisodes
+          },
+          message: `Processed ${params.animeIds.length} animes: ${successCount} synced (${totalEpisodes} episodes), ${needsAniListIdCount} need AniList ID, ${failedCount} failed.`,
+          results
+        };
       },
     }),
   };
