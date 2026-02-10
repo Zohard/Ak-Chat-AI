@@ -438,6 +438,70 @@ export const CreateMangaVolumeSchema = z.object({
   isbn: z.string().min(10).describe('ISBN barcode of volume'),
 });
 
+/**
+ * Schema for searching Nautiljon for a specific volume
+ * Maps to GET /api/admin/mangas/nautiljon/search
+ */
+export const SearchNautiljonVolumeSchema = z.object({
+  title: z.string().min(1).describe('Manga title to search (e.g., "Bleach", "Stage S")'),
+  volumeNumber: z.number().int().min(1).describe('Volume number to find'),
+});
+
+/**
+ * Schema for scraping a Nautiljon URL directly
+ * Maps to POST /api/admin/mangas/nautiljon/scrape-url
+ */
+export const ScrapeNautiljonUrlSchema = z.object({
+  url: z.string().min(1).describe('Nautiljon volume page URL (e.g., https://www.nautiljon.com/mangas/bleach/volume-1,12345.html)'),
+  volumeNumber: z.number().int().min(0).optional().describe('Expected volume number (optional, will be extracted from page if not provided)'),
+  mangaId: z.number().int().min(1).optional().describe('Manga ID to attach the cover image to (optional, uploads to R2 if provided)'),
+  createVolume: z.boolean().default(false).describe('Create/update manga_volumes entry with scraped data'),
+});
+
+/**
+ * Schema for importing/creating a manga volume with manual data
+ * Maps to POST /api/admin/mangas/:id/volumes/import
+ */
+export const ImportMangaVolumeSchema = z.object({
+  mangaId: z.number().int().min(1).describe('Manga ID'),
+  volumeNumber: z.number().int().min(1).describe('Volume number'),
+  title: z.string().optional().describe('Volume title (e.g., "Tome 1 - Le commencement")'),
+  isbn: z.string().optional().describe('ISBN-13 code'),
+  releaseDate: z.string().optional().describe('French release date (YYYY-MM-DD format)'),
+  coverUrl: z.string().url().optional().describe('Cover image URL to upload'),
+  description: z.string().optional().describe('Volume description'),
+});
+
+/**
+ * Schema for updating an existing manga volume
+ * Maps to PATCH /api/admin/mangas/volumes/:volumeId
+ */
+export const UpdateMangaVolumeSchema = z.object({
+  volumeId: z.number().int().min(1).describe('Volume ID to update'),
+  title: z.string().optional().describe('New volume title'),
+  isbn: z.string().optional().describe('New ISBN'),
+  releaseDate: z.string().optional().describe('New release date (YYYY-MM-DD)'),
+  coverUrl: z.string().url().optional().describe('New cover image URL'),
+  description: z.string().optional().describe('New description'),
+});
+
+/**
+ * Schema for deleting a manga volume
+ * Maps to DELETE /api/admin/mangas/volumes/:volumeId
+ */
+export const DeleteMangaVolumeSchema = z.object({
+  volumeId: z.number().int().min(1).describe('Volume ID to delete'),
+});
+
+/**
+ * Schema for searching volume candidates from multiple sources
+ * Maps to GET /api/admin/mangas/:id/volumes/:volumeNumber/candidates
+ */
+export const SearchVolumeCandidatesSchema = z.object({
+  mangaId: z.number().int().min(1).describe('Manga ID'),
+  volumeNumber: z.number().int().min(1).describe('Volume number to search for'),
+});
+
 // ========================================
 // BUSINESS SCHEMAS (Studios, Publishers, etc.)
 // ========================================
@@ -655,6 +719,18 @@ export const ImportAniListAllSchema = z.object({
   staffRoles: z.array(z.string()).optional().describe('Filter staff by specific roles'),
 });
 
+// ========================================
+// WEB SEARCH SCHEMA
+// ========================================
+
+/**
+ * Schema for web search using Google Custom Search API
+ */
+export const WebSearchSchema = z.object({
+  query: z.string().min(1).describe('Search query to send to Google'),
+  limit: z.number().int().min(1).max(10).default(5).describe('Number of results (max 10)'),
+});
+
 /**
  * Type exports for TypeScript
  */
@@ -701,6 +777,12 @@ export type SearchJikanMangaParams = z.infer<typeof SearchJikanMangaSchema>;
 export type LookupMangaByIsbnParams = z.infer<typeof LookupMangaByIsbnSchema>;
 export type GetMangaVolumesParams = z.infer<typeof GetMangaVolumesSchema>;
 export type CreateMangaVolumeParams = z.infer<typeof CreateMangaVolumeSchema>;
+export type SearchNautiljonVolumeParams = z.infer<typeof SearchNautiljonVolumeSchema>;
+export type ScrapeNautiljonUrlParams = z.infer<typeof ScrapeNautiljonUrlSchema>;
+export type ImportMangaVolumeParams = z.infer<typeof ImportMangaVolumeSchema>;
+export type UpdateMangaVolumeParams = z.infer<typeof UpdateMangaVolumeSchema>;
+export type DeleteMangaVolumeParams = z.infer<typeof DeleteMangaVolumeSchema>;
+export type SearchVolumeCandidatesParams = z.infer<typeof SearchVolumeCandidatesSchema>;
 
 // Business type exports
 export type BusinessListParams = z.infer<typeof BusinessListSchema>;
@@ -728,3 +810,6 @@ export type SyncAnimeEpisodesParams = z.infer<typeof SyncAnimeEpisodesSchema>;
 export type GetAnimeEpisodesParams = z.infer<typeof GetAnimeEpisodesSchema>;
 export type CheckAnimeSyncReadinessParams = z.infer<typeof CheckAnimeSyncReadinessSchema>;
 export type BatchSyncEpisodesParams = z.infer<typeof BatchSyncEpisodesSchema>;
+
+// Web search type export
+export type WebSearchParams = z.infer<typeof WebSearchSchema>;

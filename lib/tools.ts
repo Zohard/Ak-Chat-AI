@@ -43,6 +43,12 @@ import {
   LookupMangaByIsbnSchema,
   GetMangaVolumesSchema,
   CreateMangaVolumeSchema,
+  SearchNautiljonVolumeSchema,
+  ScrapeNautiljonUrlSchema,
+  ImportMangaVolumeSchema,
+  UpdateMangaVolumeSchema,
+  DeleteMangaVolumeSchema,
+  SearchVolumeCandidatesSchema,
   // Business schemas
   BusinessListSchema,
   CreateBusinessSchema,
@@ -67,6 +73,8 @@ import {
   GetAnimeEpisodesSchema,
   CheckAnimeSyncReadinessSchema,
   BatchSyncEpisodesSchema,
+  // Web search schema
+  WebSearchSchema,
 } from './schemas';
 
 const API_BASE = process.env.NESTJS_API_BASE || 'http://localhost:3002';
@@ -733,6 +741,94 @@ export function getTools(authToken?: string) {
       },
     }),
 
+    searchNautiljonVolume: tool({
+      description: 'Search Nautiljon for a specific manga volume by title and volume number. Useful for finding French edition info (ISBN, release date, cover). Example: "Cherche le volume 1 de Stage S sur Nautiljon"',
+      inputSchema: SearchNautiljonVolumeSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/admin/mangas/nautiljon/search?title=${encodeURIComponent(params.title)}&volume=${params.volumeNumber}`,
+          'GET',
+          authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    scrapeNautiljonUrl: tool({
+      description: 'Scrape volume info directly from a Nautiljon URL. Provide a URL like "https://www.nautiljon.com/mangas/stage+s/volume-1,12345.html". Can optionally create a manga_volumes entry and upload the cover to R2.',
+      inputSchema: ScrapeNautiljonUrlSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          '/api/admin/mangas/nautiljon/scrape-url',
+          'POST',
+          authToken,
+          {
+            url: params.url,
+            volumeNumber: params.volumeNumber,
+            mangaId: params.mangaId,
+            createVolume: params.createVolume,
+          }
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    importMangaVolume: tool({
+      description: 'Import/create a manga volume with manually provided data. Use this after searching Nautiljon or other sources to create a volume entry with the found information.',
+      inputSchema: ImportMangaVolumeSchema,
+      execute: async (params: any, options) => {
+        const { mangaId, ...volumeData } = params;
+        const result = await callNestAPI(
+          `/api/admin/mangas/${mangaId}/volumes/import`,
+          'POST',
+          authToken,
+          volumeData
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    updateMangaVolume: tool({
+      description: 'Update an existing manga volume. Use getMangaVolumes first to find the volume ID.',
+      inputSchema: UpdateMangaVolumeSchema,
+      execute: async (params: any, options) => {
+        const { volumeId, ...updateData } = params;
+        const result = await callNestAPI(
+          `/api/admin/mangas/volumes/${volumeId}`,
+          'PATCH',
+          authToken,
+          updateData
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    deleteMangaVolume: tool({
+      description: 'Delete a manga volume. Use getMangaVolumes first to find the volume ID.',
+      inputSchema: DeleteMangaVolumeSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/admin/mangas/volumes/${params.volumeId}`,
+          'DELETE',
+          authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    searchVolumeCandidates: tool({
+      description: 'Search for volume candidates from multiple sources (Google Books, Nautiljon) for a specific manga volume. Returns multiple options for user to choose from before importing.',
+      inputSchema: SearchVolumeCandidatesSchema,
+      execute: async (params: any, options) => {
+        const result = await callNestAPI(
+          `/api/admin/mangas/${params.mangaId}/volumes/${params.volumeNumber}/candidates`,
+          'GET',
+          authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
     // ========================================
     // BUSINESS TOOLS (Studios, Publishers, etc.)
     // ========================================
@@ -1103,6 +1199,49 @@ export function getTools(authToken?: string) {
           },
           message: `Processed ${params.animeIds.length} animes: ${successCount} synced (${totalEpisodes} episodes), ${needsAniListIdCount} need AniList ID, ${failedCount} failed.`,
           results
+        };
+      },
+    }),
+
+    // ========================================
+    // WEB SEARCH TOOL
+    // ========================================
+
+    webSearch: tool({
+      description: 'Search the web using Google Custom Search API. Use this when the user asks for external links, URLs, or information that is not in the database. Supports site-specific searches (e.g., "One Piece volume 1 site:nautiljon.com").',
+      inputSchema: WebSearchSchema,
+      execute: async (params: any, options) => {
+        const apiKey = process.env.GOOGLE_SEARCH_API_KEY;
+        const searchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID;
+
+        if (!apiKey || !searchEngineId) {
+          return {
+            success: false,
+            error: 'Google Search API is not configured. Set GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_ENGINE_ID environment variables.',
+          };
+        }
+
+        const url = `https://www.googleapis.com/customsearch/v1?key=${encodeURIComponent(apiKey)}&cx=${encodeURIComponent(searchEngineId)}&q=${encodeURIComponent(params.query)}&num=${params.limit || 5}`;
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Google Search API error: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        const results = (data.items || []).map((item: any) => ({
+          title: item.title,
+          url: item.link,
+          snippet: item.snippet,
+        }));
+
+        return {
+          success: true,
+          query: params.query,
+          totalResults: data.searchInformation?.totalResults || '0',
+          results,
         };
       },
     }),
