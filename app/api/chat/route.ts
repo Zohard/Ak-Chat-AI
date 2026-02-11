@@ -16,10 +16,14 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:3001',
   'http://localhost:3003',
-  process.env.FRONTEND_URL,
-  process.env.NEXT_PUBLIC_FRONTEND_URL,
+  ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : []),
+  ...(process.env.NUXT_ORIGIN ? process.env.NUXT_ORIGIN.split(',') : []),
+  ...(process.env.NEXT_PUBLIC_FRONTEND_URL ? process.env.NEXT_PUBLIC_FRONTEND_URL.split(',') : []),
   'https://ak-front-production.up.railway.app',
-].filter(Boolean);
+  'https://www.anime-kun.net',
+  'https://anime-kun.net',
+  'https://api.anime-kun.net',
+].filter((o): o is string => Boolean(o)).map(o => o.trim());
 
 // Get CORS headers based on request origin
 function getCorsHeaders(request: Request): Record<string, string> {
@@ -70,25 +74,25 @@ export async function POST(req: Request) {
 
     const rateLimitResult = await checkRateLimit(userId);
     const rateLimitHeaders = getRateLimitHeaders(
-        rateLimitResult.limit,
-        rateLimitResult.remaining,
-        rateLimitResult.reset
+      rateLimitResult.limit,
+      rateLimitResult.remaining,
+      rateLimitResult.reset
     );
 
     if (!rateLimitResult.success) {
       return new Response(
-          JSON.stringify({
-            error: 'Rate limit exceeded',
-            message: `Quota exceeded: ${rateLimitResult.limit} requests. Try again after ${rateLimitResult.reset.toLocaleString()}.`,
-          }),
-          {
-            status: 429,
-            headers: {
-              'Content-Type': 'application/json',
-              ...getCorsHeaders(req),
-              ...rateLimitHeaders,
-            },
-          }
+        JSON.stringify({
+          error: 'Rate limit exceeded',
+          message: `Quota exceeded: ${rateLimitResult.limit} requests. Try again after ${rateLimitResult.reset.toLocaleString()}.`,
+        }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            ...getCorsHeaders(req),
+            ...rateLimitHeaders,
+          },
+        }
       );
     }
 
@@ -238,18 +242,18 @@ export async function POST(req: Request) {
     }
 
     return new Response(
-        JSON.stringify({
-          error: 'Error',
-          message: userFriendlyMessage,
-          details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
-        }),
-        {
-          status: statusCode,
-          headers: {
-            'Content-Type': 'application/json',
-            ...getCorsHeaders(req),
-          },
-        }
+      JSON.stringify({
+        error: 'Error',
+        message: userFriendlyMessage,
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+      }),
+      {
+        status: statusCode,
+        headers: {
+          'Content-Type': 'application/json',
+          ...getCorsHeaders(req),
+        },
+      }
     );
   }
 }

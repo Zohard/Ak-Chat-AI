@@ -8,12 +8,15 @@ export function middleware(request: NextRequest) {
   // Define allowed origins
   const allowedOrigins = [
     process.env.FRONTEND_URL,
-    process.env.NUXT_ORIGIN,
+    ...(process.env.NUXT_ORIGIN ? process.env.NUXT_ORIGIN.split(',') : []),
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3003',
     'https://ak-front-production.up.railway.app',
-  ].filter(Boolean);
+    'https://www.anime-kun.net',
+    'https://anime-kun.net',
+    'https://api.anime-kun.net',
+  ].filter((o): o is string => Boolean(o)).map(o => o.trim());
 
   // Check if origin is allowed
   const isAllowedOrigin = origin && allowedOrigins.includes(origin);
