@@ -1208,39 +1208,45 @@ export function getTools(authToken?: string) {
     // ========================================
 
     webSearch: tool({
-      description: 'Search the web using Google Custom Search API. Use this when the user asks for external links, URLs, or information that is not in the database. Supports site-specific searches (e.g., "One Piece volume 1 site:nautiljon.com").',
+      description: 'Search the web using Tavily API. Use this when the user asks for external links, URLs, or information that is not in the database. Supports site-specific searches (e.g., "One Piece volume 1 site:nautiljon.com").',
       inputSchema: WebSearchSchema,
       execute: async (params: any, options) => {
-        const apiKey = process.env.GOOGLE_SEARCH_API_KEY;
-        const searchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID;
+        const apiKey = process.env.TAVILY_API_KEY;
 
-        if (!apiKey || !searchEngineId) {
+        if (!apiKey) {
           return {
             success: false,
-            error: 'Google Search API is not configured. Set GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_ENGINE_ID environment variables.',
+            error: 'Tavily API is not configured. Set TAVILY_API_KEY environment variable.',
           };
         }
 
-        const url = `https://www.googleapis.com/customsearch/v1?key=${encodeURIComponent(apiKey)}&cx=${encodeURIComponent(searchEngineId)}&q=${encodeURIComponent(params.query)}&num=${params.limit || 5}`;
-
-        const response = await fetch(url);
+        const response = await fetch('https://api.tavily.com/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            api_key: apiKey,
+            query: params.query,
+            max_results: params.limit || 5,
+            include_answer: true,
+          }),
+        });
 
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(`Google Search API error: ${response.status} - ${errorText}`);
+          throw new Error(`Tavily API error: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
-        const results = (data.items || []).map((item: any) => ({
+        const results = (data.results || []).map((item: any) => ({
           title: item.title,
-          url: item.link,
-          snippet: item.snippet,
+          url: item.url,
+          snippet: item.content,
         }));
 
         return {
           success: true,
           query: params.query,
-          totalResults: data.searchInformation?.totalResults || '0',
+          answer: data.answer || null,
           results,
         };
       },
