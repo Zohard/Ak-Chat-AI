@@ -71,6 +71,7 @@ import {
   // Episode sync schemas
   SyncAnimeEpisodesSchema,
   GetAnimeEpisodesSchema,
+  UpdateEpisodeDateSchema,
   CheckAnimeSyncReadinessSchema,
   BatchSyncEpisodesSchema,
   // Web search schema
@@ -1068,6 +1069,40 @@ export function getTools(authToken?: string) {
         return {
           success: true,
           episodeCount: result.length || 0,
+          data: result
+        };
+      },
+    }),
+
+    updateEpisodeDate: tool({
+      description: 'Update the diffusion/air date for a specific anime episode. Can optionally shift all subsequent episodes by the same time offset. When applyOffsetToNext is true, all following episodes will be automatically adjusted by the same number of days. The offsetDays is automatically calculated from the date change, but can be explicitly provided if needed.',
+      inputSchema: UpdateEpisodeDateSchema,
+      execute: async (params: any, options) => {
+        const body: any = {
+          dateDiffusion: params.dateDiffusion,
+        };
+
+        if (params.applyOffsetToNext !== undefined) {
+          body.applyOffsetToNext = params.applyOffsetToNext;
+        }
+
+        if (params.offsetDays !== undefined) {
+          body.offsetDays = params.offsetDays;
+        }
+
+        const result = await callNestAPI(
+          `/api/animes/${params.animeId}/episodes/${params.episodeId}`,
+          'PATCH',
+          authToken,
+          body
+        );
+
+        return {
+          success: true,
+          message: params.applyOffsetToNext && result.affectedCount > 1
+            ? `Successfully updated episode ${params.episodeId} and shifted ${result.affectedCount - 1} subsequent episodes`
+            : `Successfully updated episode ${params.episodeId}`,
+          affectedCount: result.affectedCount || 1,
           data: result
         };
       },

@@ -664,6 +664,18 @@ export const GetAnimeEpisodesSchema = z.object({
 });
 
 /**
+ * Schema for updating an episode's diffusion date
+ * Maps to PATCH /api/animes/:animeId/episodes/:episodeId
+ */
+export const UpdateEpisodeDateSchema = z.object({
+  animeId: z.number().int().min(1).describe('Anime ID the episode belongs to'),
+  episodeId: z.number().int().min(1).describe('Episode ID to update'),
+  dateDiffusion: z.string().nullable().optional().describe('New diffusion date in YYYY-MM-DD format, or null to remove the date'),
+  applyOffsetToNext: z.boolean().default(false).describe('If true, applies the same date offset to all subsequent episodes'),
+  offsetDays: z.number().int().optional().describe('Number of days to offset (automatically calculated from date change, but can be explicitly provided)'),
+});
+
+/**
  * Schema for checking anime sync readiness
  * Returns info about whether anime has AniList ID and nb_ep
  */
@@ -808,6 +820,7 @@ export type ImportAniListAllParams = z.infer<typeof ImportAniListAllSchema>;
 // Episode sync type exports
 export type SyncAnimeEpisodesParams = z.infer<typeof SyncAnimeEpisodesSchema>;
 export type GetAnimeEpisodesParams = z.infer<typeof GetAnimeEpisodesSchema>;
+export type UpdateEpisodeDateParams = z.infer<typeof UpdateEpisodeDateSchema>;
 export type CheckAnimeSyncReadinessParams = z.infer<typeof CheckAnimeSyncReadinessSchema>;
 export type BatchSyncEpisodesParams = z.infer<typeof BatchSyncEpisodesSchema>;
 
