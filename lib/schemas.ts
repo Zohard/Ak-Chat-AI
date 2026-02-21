@@ -398,10 +398,51 @@ export const SearchGoogleBooksMangaSchema = z.object({
 /**
  * Schema for searching Booknode for manga
  * Maps to GET /api/mangas/booknode/month/:year/:month
+ * Use this for past months (before current month) or as fallback.
  */
 export const SearchBooknodeMangaSchema = z.object({
   year: z.number().int().min(2000).max(2100).describe('Year'),
   month: z.number().int().min(1).max(12).describe('Month (1-12)'),
+});
+
+/**
+ * Schema for searching MangaCollec planning for manga releases by month.
+ * Maps to GET /api/mangas/mangacollec/month/:year/:month
+ * Only valid for current month or future months.
+ */
+export const SearchMangaCollecMangaSchema = z.object({
+  year: z.number().int().min(2000).max(2100).describe('Year'),
+  month: z.number().int().min(1).max(12).describe('Month (1-12). Must be >= current month.'),
+});
+
+/**
+ * Schema for importing a manga and optionally its corresponding volume in one step.
+ * Creates the manga entry, then optionally imports the volume using MangaCollec/Booknode data.
+ */
+export const ImportMangaWithVolumeSchema = z.object({
+  // Manga creation fields
+  titre: z.string().min(1).describe('Main title of the manga'),
+  niceUrl: z.string().optional().describe('URL-friendly slug (auto-generated from titre if omitted)'),
+  titreOrig: z.string().optional().describe('Original title (usually Japanese)'),
+  titreFr: z.string().optional().describe('French title'),
+  annee: z.string().optional().describe('Release year'),
+  nbVolumes: z.string().optional().describe('Number of volumes'),
+  synopsis: z.string().optional().describe('Synopsis/description'),
+  auteur: z.string().optional().describe('Author name'),
+  editeur: z.string().optional().describe('Publisher'),
+  image: z.string().url().optional().describe('Cover image URL'),
+  statut: z.number().int().min(0).max(2).default(0).describe('Status: 0=blocked, 1=published, 2=pending'),
+  licence: z.number().int().min(0).max(1).optional().describe('Licensed in France: 0=No, 1=Yes'),
+  ficheComplete: z.number().int().min(0).max(1).default(0).describe('Completion: 0=incomplete, 1=complete'),
+  origine: z.string().optional().describe('Country of origin'),
+  precisions: z.string().optional().describe('Public comments (BBCode allowed)'),
+  // Volume import option
+  importVolume: z.boolean().default(false).describe('If true, also creates a manga_volumes entry for the associated volume'),
+  volumeNumber: z.number().int().min(1).optional().describe('Volume number to import (required when importVolume=true)'),
+  volumeTitle: z.string().optional().describe('Volume-specific title'),
+  volumeIsbn: z.string().optional().describe('ISBN-13 of the volume'),
+  volumeReleaseDate: z.string().optional().describe('French release date of the volume (YYYY-MM-DD)'),
+  volumeCoverUrl: z.string().url().optional().describe('Cover image URL of the volume'),
 });
 
 /**
@@ -785,6 +826,8 @@ export type UpdateMangaImageUrlParams = z.infer<typeof UpdateMangaImageUrlSchema
 export type UploadMangaImageFromFileParams = z.infer<typeof UploadMangaImageFromFileSchema>;
 export type SearchGoogleBooksMangaParams = z.infer<typeof SearchGoogleBooksMangaSchema>;
 export type SearchBooknodeMangaParams = z.infer<typeof SearchBooknodeMangaSchema>;
+export type SearchMangaCollecMangaParams = z.infer<typeof SearchMangaCollecMangaSchema>;
+export type ImportMangaWithVolumeParams = z.infer<typeof ImportMangaWithVolumeSchema>;
 export type SearchJikanMangaParams = z.infer<typeof SearchJikanMangaSchema>;
 export type LookupMangaByIsbnParams = z.infer<typeof LookupMangaByIsbnSchema>;
 export type GetMangaVolumesParams = z.infer<typeof GetMangaVolumesSchema>;

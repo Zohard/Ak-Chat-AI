@@ -39,6 +39,7 @@ import {
   UploadMangaImageFromFileSchema,
   SearchGoogleBooksMangaSchema,
   SearchBooknodeMangaSchema,
+  SearchMangaCollecMangaSchema,
   SearchJikanMangaSchema,
   LookupMangaByIsbnSchema,
   GetMangaVolumesSchema,
@@ -49,6 +50,7 @@ import {
   UpdateMangaVolumeSchema,
   DeleteMangaVolumeSchema,
   SearchVolumeCandidatesSchema,
+  ImportMangaWithVolumeSchema,
   // Business schemas
   BusinessListSchema,
   CreateBusinessSchema,
@@ -483,6 +485,56 @@ export function getTools(authToken?: string) {
       },
     }),
 
+    importMangaWithVolume: tool({
+      description: 'Create a new manga entry and optionally import its associated volume in a single operation. Use this after finding a manga via searchMangaCollecManga or searchBooknodeManga when you want to also register the volume (ISBN, release date, cover). Set importVolume=true and provide volumeNumber + volume details to also create the manga_volumes entry. Returns both the manga creation result and, if importVolume=true, the volume import result.',
+      inputSchema: ImportMangaWithVolumeSchema,
+      execute: async (params: any, options) => {
+        const {
+          importVolume,
+          volumeNumber,
+          volumeTitle,
+          volumeIsbn,
+          volumeReleaseDate,
+          volumeCoverUrl,
+          ...mangaData
+        } = params;
+
+        // Step 1: Create the manga
+        const mangaResult = await callNestAPI('/api/admin/mangas', 'POST', authToken, mangaData);
+        const mangaId = mangaResult?.id || mangaResult?.idManga;
+
+        if (!importVolume || !mangaId || !volumeNumber) {
+          return {
+            success: true,
+            manga: mangaResult,
+            volume: null,
+            message: `Manga created (ID: ${mangaId})${importVolume && !volumeNumber ? '. Skipped volume import: volumeNumber is required.' : ''}`,
+          };
+        }
+
+        // Step 2: Import the volume
+        const volumeResult = await callNestAPI(
+          `/api/admin/mangas/${mangaId}/volumes/import`,
+          'POST',
+          authToken,
+          {
+            volumeNumber,
+            title: volumeTitle,
+            isbn: volumeIsbn,
+            releaseDate: volumeReleaseDate,
+            coverUrl: volumeCoverUrl,
+          }
+        );
+
+        return {
+          success: true,
+          manga: mangaResult,
+          volume: volumeResult,
+          message: `Manga created (ID: ${mangaId}) and volume ${volumeNumber} imported.`,
+        };
+      },
+    }),
+
     updateMangaStatus: tool({
       description: 'Update manga status (0=blocked, 1=published, 2=pending)',
       inputSchema: UpdateMangaStatusSchema,
@@ -548,11 +600,40 @@ export function getTools(authToken?: string) {
     }),
 
     searchBooknodeManga: tool({
-      description: 'Search Booknode.com for manga releases in a specific month and year. Returns manga found on Booknode.',
+      description: 'Search Booknode.com for manga releases in a specific month and year. Use this for PAST months (before the current month) or as a fallback when MangaCollec is not suitable. Returns manga with exists/volumeExists comparison against the database.',
       inputSchema: SearchBooknodeMangaSchema,
       execute: async (params: any, options) => {
         const result = await callNestAPI(
           `/api/mangas/booknode/month/${params.year}/${params.month}`,
+          'GET',
+          authToken
+        );
+        return { success: true, data: result };
+      },
+    }),
+
+    searchMangaCollecManga: tool({
+      description: 'Search MangaCollec planning for manga volume releases in a specific month and year. Use this ONLY for the CURRENT month or FUTURE months (>= current month). For past months use searchBooknodeManga instead. Returns a list of planned releases with volume number, ISBN, release date, cover image, and whether the manga/volume already exists in the database.',
+      inputSchema: SearchMangaCollecMangaSchema,
+      execute: async (params: any, options) => {
+        // Enforce >= current month rule
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1; // 1-indexed
+        const isBeforeCurrentMonth =
+          params.year < currentYear ||
+          (params.year === currentYear && params.month < currentMonth);
+
+        if (isBeforeCurrentMonth) {
+          return {
+            success: false,
+            error: `MangaCollec planning only covers current and future months. Requested ${params.year}-${String(params.month).padStart(2, '0')} is in the past. Use searchBooknodeManga for past months instead.`,
+            suggestion: 'searchBooknodeManga',
+          };
+        }
+
+        const result = await callNestAPI(
+          `/api/mangas/mangacollec/month/${params.year}/${params.month}`,
           'GET',
           authToken
         );
