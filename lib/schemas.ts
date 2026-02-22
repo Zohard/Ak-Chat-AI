@@ -814,7 +814,7 @@ export type UpdateMangaImageJikanParams = z.infer<typeof UpdateMangaImageJikanSc
 export type UpdateMangaImageUrlParams = z.infer<typeof UpdateMangaImageUrlSchema>;
 export type UploadMangaImageFromFileParams = z.infer<typeof UploadMangaImageFromFileSchema>;
 export type SearchGoogleBooksMangaParams = z.infer<typeof SearchGoogleBooksMangaSchema>;
-export type SearchBooknodeMangaParams = z.infer<typeof SearchBooknodeMangaSchema>;
+
 export type SearchMangaCollecMangaParams = z.infer<typeof SearchMangaCollecMangaSchema>;
 export type ImportMangaWithVolumeParams = z.infer<typeof ImportMangaWithVolumeSchema>;
 export type SearchJikanMangaParams = z.infer<typeof SearchJikanMangaSchema>;
