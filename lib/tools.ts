@@ -38,7 +38,6 @@ import {
   UpdateMangaImageUrlSchema,
   UploadMangaImageFromFileSchema,
   SearchGoogleBooksMangaSchema,
-  SearchBooknodeMangaSchema,
   SearchMangaCollecMangaSchema,
   SearchJikanMangaSchema,
   LookupMangaByIsbnSchema,
@@ -599,39 +598,10 @@ export function getTools(authToken?: string) {
       },
     }),
 
-    searchBooknodeManga: tool({
-      description: 'Search Booknode.com for manga releases in a specific month and year. Use this for PAST months (before the current month) or as a fallback when MangaCollec is not suitable. Returns manga with exists/volumeExists comparison against the database.',
-      inputSchema: SearchBooknodeMangaSchema,
-      execute: async (params: any, options) => {
-        const result = await callNestAPI(
-          `/api/mangas/booknode/month/${params.year}/${params.month}`,
-          'GET',
-          authToken
-        );
-        return { success: true, data: result };
-      },
-    }),
-
     searchMangaCollecManga: tool({
-      description: 'Search MangaCollec planning for manga volume releases in a specific month and year. Use this ONLY for the CURRENT month or FUTURE months (>= current month). For past months use searchBooknodeManga instead. Returns a list of planned releases with volume number, ISBN, release date, cover image, and whether the manga/volume already exists in the database.',
+      description: 'Search MangaCollec planning for manga volume releases in a specific month and year. Returns a list of planned releases with volume number, ISBN, release date, cover image, and whether the manga/volume already exists in the database.',
       inputSchema: SearchMangaCollecMangaSchema,
       execute: async (params: any, options) => {
-        // Enforce >= current month rule
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth() + 1; // 1-indexed
-        const isBeforeCurrentMonth =
-          params.year < currentYear ||
-          (params.year === currentYear && params.month < currentMonth);
-
-        if (isBeforeCurrentMonth) {
-          return {
-            success: false,
-            error: `MangaCollec planning only covers current and future months. Requested ${params.year}-${String(params.month).padStart(2, '0')} is in the past. Use searchBooknodeManga for past months instead.`,
-            suggestion: 'searchBooknodeManga',
-          };
-        }
-
         const result = await callNestAPI(
           `/api/mangas/mangacollec/month/${params.year}/${params.month}`,
           'GET',

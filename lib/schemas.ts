@@ -396,23 +396,12 @@ export const SearchGoogleBooksMangaSchema = z.object({
 });
 
 /**
- * Schema for searching Booknode for manga
- * Maps to GET /api/mangas/booknode/month/:year/:month
- * Use this for past months (before current month) or as fallback.
- */
-export const SearchBooknodeMangaSchema = z.object({
-  year: z.number().int().min(2000).max(2100).describe('Year'),
-  month: z.number().int().min(1).max(12).describe('Month (1-12)'),
-});
-
-/**
  * Schema for searching MangaCollec planning for manga releases by month.
  * Maps to GET /api/mangas/mangacollec/month/:year/:month
- * Only valid for current month or future months.
  */
 export const SearchMangaCollecMangaSchema = z.object({
   year: z.number().int().min(2000).max(2100).describe('Year'),
-  month: z.number().int().min(1).max(12).describe('Month (1-12). Must be >= current month.'),
+  month: z.number().int().min(1).max(12).describe('Month (1-12)'),
 });
 
 /**
